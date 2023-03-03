@@ -12,6 +12,9 @@ build :
 run : build
 	docker run -dit --rm -p $(PORT):$(PORT) --name ${NAME} ${IMAGE}
 
+debug : build
+	docker run -it --rm -p $(PORT):$(PORT) --name ${NAME} ${IMAGE}
+
 sleep :
 	sleep 1
 
