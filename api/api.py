@@ -1,33 +1,26 @@
 #!/bin/python3
 
 import json
-from flask import Flask, request
+from flask import Flask, request, send_from_directory
 from flask_expects_json import expects_json
-
+import schemes
 from model.naive_model import Geometry, MicroChannelCooler
 from model.fluids import water
 
 app = Flask(__name__)
 
-schema = {
-    "type": "object",
-    "properties": {
-        "L": {"type":"number"},
-        "W": {"type":"number"},
-        "D": {"type":"number"},
-        "T_in": {"type":"number"},
-        "T_w": {"type":"number"},
-        "Q": {"type":"number"},
-        },
-    "required": ["L","W","D","T_in","T_w","Q"]
-    }
+@app.route('/static/<path:path>')
+def send_report(path):
+    return send_from_directory('gui/static/', path)
+
+# routes follow
 
 @app.route("/")
 def hello_world():
     return "<center><h1>Hello, World!</h1></center>"
 
 @app.route("/naive", methods=['POST'])
-@expects_json(schema)
+@expects_json(schemes.naive)
 def naive():
 
     data = request.get_json()
