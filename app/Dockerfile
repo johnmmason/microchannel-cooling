@@ -1,11 +1,5 @@
 FROM python:3.9
 
-
-
-# COPY api.py /app/
-# COPY requirements.txt /app/
-# COPY model /app/model
-
 RUN ln -sf /usr/share/zoneinfo/America/Chicago /etc/localtime
 
 COPY . /app
