@@ -18,3 +18,18 @@ water = Fluid(rho = 997, # density of water [kg/m^3]
               mu = 0.00089, # viscosity of water [Pa*s]
               cp = 4180, # heat capacity of water [J/kg*K]
               k = 0.606) # thermal conductivity of water [W/m*K]
+
+ethylene_glycol = Fluid(rho = 1.11, # density of antifreeze [kg/m^3]
+                        mu = 0.0161, # viscosity of antifreeze [Pa*s]
+                        cp = 2.42,  # heat capacity of antifreeze [J/kg*K]
+                        k =  0.25)  # thermal conductivity of antifreeze [W/m*k]
+
+silicon_dioxide_nanofluid = Fluid(rho = 1500,
+                                  mu = 0.0003,
+                                  cp = 3100,
+                                  k = 2.5)
+
+mineral_oil = Fluid(rho = 820,
+                    mu = 0.07,
+                    cp = 2000,
+                    k = 0.14)
