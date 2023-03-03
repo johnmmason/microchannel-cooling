@@ -1,0 +1,1 @@
+# Contains HTML templates for use in GUI.
