@@ -1,4 +1,4 @@
-# microchannel-cooling/api
+# microchannel-cooling/app
 
 ## Usage
 
