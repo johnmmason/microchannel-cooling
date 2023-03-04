@@ -25,4 +25,5 @@ clean:
 	- docker rmi -f ${IMAGE}
 	- docker rm /${NAME}
 
-iterate: stop clean run sleep test
+run_tests: stop clean run sleep test
+iterate: stop clean debug
