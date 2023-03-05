@@ -1,11 +1,12 @@
-{% extends "base.jinja2" %}
+{% extends "layout.jinja2" %}
 {% block headcontent %}
+<!--   works for full page reload -->
 <meta http-equiv="refresh" content="{{refresh_period}}">
 {% endblock %}
 
 {% block content %}
 <div class="row center wrap-x">
-    <div class="text">
+    <div class="text" id="refresh">
       {{display}}
     </div>
 </div>

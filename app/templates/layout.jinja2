@@ -13,6 +13,16 @@
   <meta property="og:image:height" content="523"/>
   <meta name="HandheldFriendly" content="True" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <style type="text/css">
+    .hidden {display:none;}
+  </style>
+  <script type="text/javascript" src="/scripts/jquery.js"></script>
+  <script type="text/javascript">
+    $('html').addClass('hidden');
+    $(document).ready(function() {    // EDIT: From Adam Zerner's comment below: Rather use load: $(window).on('load', function () {...});
+      $('html').show();  // EDIT: Can also use $('html').removeClass('hidden'); 
+     });  
+  </script>
   <style>
   @import url('../ttf/Kiona-Regular.ttf');
   </style>

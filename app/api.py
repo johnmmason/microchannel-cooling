@@ -1,7 +1,6 @@
 #!/bin/python3
 from flask import Flask, render_template
 from config import title
-
 app = Flask(title)
 
 @app.errorhandler(404)
@@ -17,6 +16,7 @@ def page_not_found(e):
 # routes follow
 from model.api import model
 from gui.api import gui
+gui.appcontext = app.app_context()
 app.register_blueprint(model, url_prefix='/model')
 app.register_blueprint(gui, url_prefix='/')
 
