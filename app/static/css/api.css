@@ -1,0 +1,120 @@
+.opblock.opblock-options {
+    display: none;
+}
+
+@font-face {
+    font-family: Montserrat;
+    src: url('../ttf/Montserrat-Regular.ttf');
+    font-weight: regular;
+}
+
+* {
+    font-family: Montserrat !important;
+    font-variant-ligatures: none !important;
+}
+
+.opblock.opblock-get {
+    border-color: rgb(188, 45, 41) !important;
+    background-color: rgba(0, 0, 0, 0) !important;
+}
+
+.swagger-ui .opblock.opblock-get .opblock-summary-method {
+    border-color: rgb(188, 45, 41) !important;
+    background-color: rgba(188, 45, 41, 0.5) !important;
+}
+
+.opblock.opblock-post {
+    border-color: rgb(0, 49, 113) !important;
+    background-color: rgba(0, 0, 0, 0) !important;
+}
+
+.swagger-ui .opblock.opblock-post .opblock-summary-method {
+    border-color: rgb(0, 49, 113) !important;
+    background-color: rgba(0, 49, 113, 0.5) !important;
+}
+
+.swagger-ui .response-content-type.controls-accept-header select {
+    border-color: rgb(188, 45, 41) !important;
+}
+
+.opblock {
+    backdrop-filter: blur(20px);
+    color: rgb(235, 246, 247) !important;
+}
+
+.swagger-ui .opblock-description-wrapper p,
+renderedMarkdown,
+a,
+h4,
+.try-out,
+button.btn.try-out__btn {
+    color: rgb(235, 246, 247) !important;
+}
+
+.models,
+span.model-title,
+span,
+td {
+    color: rgb(235, 246, 247) !important;
+}
+
+.models,
+span.model-title {
+    backdrop-filter: blur(40px) brightness(0.5);
+}
+
+.opblock-section-header {
+    background-color: rgb(0, 0, 0) !important;
+    box-shadow: 1px 1px rgb(235, 246, 247);
+}
+
+.prop-type {
+    color: rgb(49, 117, 137) !important;
+}
+
+span.model-toggle,
+span.model-toggle:after {
+    filter: invert(1);
+}
+
+.title {
+    color: rgb(188, 45, 41) !important;
+}
+
+.swagger-ui table thead tr td {
+    border-bottom: 1px solid rgba(235, 246, 247, .2)
+}
+
+.swagger-ui .btn.execute {
+    border-color: rgb(0, 0, 0) !important;
+    background-color: rgba(188, 45, 41, 0.5) !important;
+}
+
+.swagger-ui .opblock-body pre,
+textarea.curl {
+    background: none !important;
+    box-shadow: 1px 1px rgba(235, 246, 247, .2), -1px -1px rgba(235, 246, 247, .2);
+}
+
+.renderedMarkdown {
+    background: none !important;
+}
+
+input {
+    font-family: sans-serif !important;
+}
+
+.download-contents {
+    background: rgba(235, 246, 247, .2);
+}
+
+.swagger-section {
+    background: transparent !important;
+    background-size: cover;
+    background-attachment: fixed;
+    overflow-x: hidden;
+}
+
+div.scheme-container {
+    background: transparent !important;
+}

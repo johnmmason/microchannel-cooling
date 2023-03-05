@@ -1,0 +1,68 @@
+:root {
+    /* colors  - from https://en.wikipedia.org/wiki/Traditional_colors_of_Japan
+       gives a muted palette as opposed to standard bright colors 
+       - feel free to change to another palette */
+    /* whites */
+    --aijiro: rgba(235, 246, 247, 1);
+    --mashiro: rgb(255, 255, 255);
+    --zoge-iro: rgb(255, 255, 240);
+    --hakushi: rgb(249, 251, 255);
+    --hakushi-alph: rgb(249, 251, 255, 0.5);
+    /* green, blues purples */
+    --mizu-iro: rgb(134, 171, 165);
+    --gunjo-iro: rgb(93, 140, 174);
+    --sora-iro: rgb(77, 143, 172);
+    --chigusa-iro: rgb(49, 117, 137);
+    --benimidori: rgb(120, 119, 155);
+    --kurobeni: rgb(35, 25, 30);
+    --rurikon: rgb(27, 41, 75);
+    --rurikon-alph: rgba(27, 41, 75, 0.15);
+    --konjo-iro: rgb(0, 49, 113);
+    --ao: rgb(0, 0, 255);
+    --omeshi-onando: rgb(61, 76, 81);
+    --tetsuonando: rgb(43, 55, 54);
+    /* reds */
+    --sakuranezumi: rgb(172, 129, 118);
+    --ginshu: rgb(188, 45, 41);
+    --azuki-iro: rgb(103, 36, 34);
+    --enji-iro: rgb(157, 41, 51);
+    /* black */
+    --kokushoku: rgb(23, 20, 18);
+    --kokushoku-alph: rgba(23, 20, 18, 0.2);
+    /* not accurate */
+    --aijiro-haiiro: #A0A3A4;
+    --haiiro: rgba(91, 90, 92, 0.5);
+    --sukaitsuri-iro: rgb(220, 240, 250);
+    /* default */
+    --nandemonai: rgba(0, 0, 0, 0);
+    --shiro: var(--hakushi);
+    --kuro: rgb(0, 0, 0);
+    /* 
+    */
+    --white-text: var(--aijiro);
+    --black-text: var(--kurobeni);
+    --font: 'Kiona-Regular', 'Montserrat-Regular', system-ui;
+    /* may not work on all systems, not sure why */
+    font-family: var(--font);
+}
+
+h3,
+h4,
+h5,
+h6 {
+    font-family: var(--font);
+    font-weight: 700;
+    color: var(--black-text);
+}
+
+h1,
+h2 {
+    font-size: 2.5rem;
+    font-family: var(--font);
+    color: var(--black-text);
+}
+
+h3 {
+    font-size: 1.5rem;
+    font-variant: all-small-caps;
+}
