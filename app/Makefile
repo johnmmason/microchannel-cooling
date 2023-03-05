@@ -24,6 +24,11 @@ test :
 clean:
 	- docker rmi -f ${IMAGE}
 	- docker rm /${NAME}
+	- docker images --quiet --filter=dangling=true | xargs --no-run-if-empty docker rmi
+	# dangling image cleanup
+
+purge: clean
+	- docker system prune -a -f
 
 run_tests: stop clean run sleep test
 iterate: stop clean debug

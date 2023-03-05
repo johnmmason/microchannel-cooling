@@ -8,9 +8,14 @@
     flex-wrap: wrap;
 }
 
+.wrap-x {
+    flex-wrap: wrap;
+}
+
 .container {
     width: 100%;
     height: 100%;
+    padding: 1vh 1vw;
 }
 
 .center {
@@ -59,4 +64,10 @@
     backdrop-filter: blur(10px) brightness(1.5) saturate(0.75) contrast(0.75);
     color: var(--kokushoku);
     border-radius: 5px;
+}
+
+textarea {
+    background-color: rgba(1, 1, 1, 0.0);
+    color: var(--kokushoku);
+    backdrop-filter: brightness(1.5) saturate(0.25) contrast(0.75);
 }
