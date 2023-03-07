@@ -1,7 +1,9 @@
 from time import sleep
 import multiprocessing as mp
 from flask import Blueprint, request as rq, render_template, redirect, current_app
+import matplotlib.pyplot as plt
 import requests as rqs
+import numpy as np
 import json as js
 from config import base
 ##################
@@ -78,3 +80,8 @@ def clear(method) -> str:
     state[2].value = 0
     state[3]['out'] = "Not Computed Yet"
     return redirect(f'/{method}')
+
+@gui.route('/testplot')
+def chartTest():
+    plt.plot([1, 2, 3, 4], [1, 4, 9, 16])
+    return render_template('testplot.html', name = plt.show())
