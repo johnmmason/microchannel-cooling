@@ -2,10 +2,9 @@
 
 ## Usage
 
-1. Build the Docker container: `make build`
-2. Run the Docker container: `make run`
-3. Test the API: `./example_post.sh`
-4. Stop the Docker container: `make stop`
+1. Run the Docker container: `make run`
+2. Test the API: `./example_post.sh`
+3. Stop the Docker container: `make stop`
 
 ### Example
 
