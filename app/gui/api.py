@@ -10,7 +10,6 @@ gui = Blueprint('gui', __name__)
 man = mp.Manager()
 
 ##################
-appcontext = None
 data = None # global variables to store data (a bit hacky, but this way we should have a loading screen)
 state = [man.Value('i',0), man.Value('i',0), man.Value('i', 0), man.dict({'out':"Not Computed Yet"})] # iteration, total-iterations, status, result
 states = ['Idle', 'Running', 'Done']
