@@ -1,12 +1,12 @@
 naive = {
     "type": "object",
     "properties": {
-        "L": {"type":["number", "object"]},
-        "W": {"type":["number","object"]},
+        "L": {"type":"number"},
+        "W": {"type":"number"},
         "D": {"type":["number","object"]},
-        "T_in": {"type":["number","object"]},
-        "T_w": {"type":["number","object"]},
-        "Q": {"type":["number","object"]},
+        "T_in": {"type":"number"},
+        "T_w": {"type":"number"},
+        "Q": {"type":"number"},
         },
     "required": ["L","W","D","T_in","T_w","Q"]
     }
