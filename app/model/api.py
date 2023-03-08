@@ -1,7 +1,9 @@
 import json, copy, io
 import numpy as np
-from flask import Blueprint, request
+from flask import Blueprint, Response, request
 from flask_expects_json import expects_json
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from model import schemes
 from model.naive_model import Geometry, MicroChannelCooler
 from model.fluids import water
@@ -32,4 +34,29 @@ def naive():
 
     convert_numpy_to_list(out)
     
-    return json.dumps(out, indent=2)
+    if data['output'] == 'plot':
+
+        D = data['D']
+        
+        fig, (ax1, ax2)  = plt.subplots(1, 2)
+
+        fig.set_figwidth(10)
+        fig.set_figheight(6)
+        fig.tight_layout(pad=4)
+        
+        ax1.plot( D, q * 10**(-4) )
+        ax1.set_xlabel('D ($\mu m$)')
+        ax1.set_ylabel('Heat Flux ($W/cm^2$)')
+        ax1.set_xscale('log')
+    
+        ax2.plot( D, dP * 0.000145038 )
+        ax2.set_xlabel('D ($\mu m$)')
+        ax2.set_ylabel('$\delta P$ (psi)')
+        ax2.set_xscale('log')
+
+        output = io.BytesIO()
+        FigureCanvas(fig).print_png(output)
+        return Response(output.getvalue(), mimetype='image/png')
+
+    else:
+        return json.dumps(out, indent=2)

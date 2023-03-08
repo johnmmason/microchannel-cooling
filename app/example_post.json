@@ -1,8 +1,9 @@
 {
     "L":0.1,
     "W":100e-6,
-    "D":{"type":"linspace","start":10e-6,"stop":50e-6,"num":10},
+    "D":{"type":"arange","start":10e-6,"stop":50e-6,"step":1e-6},
     "T_in":293,
     "T_w":373,
-    "Q":100
+    "Q":100,
+    "output":"plot"
 }
