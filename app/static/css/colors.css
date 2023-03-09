@@ -9,6 +9,8 @@
     --hakushi: rgb(249, 251, 255);
     --hakushi-alph: rgb(249, 251, 255, 0.5);
     /* green, blues purples */
+    --yanagizome: rgb(140, 158, 94);
+    --moegi: rgb(91, 137, 48);
     --mizu-iro: rgb(134, 171, 165);
     --gunjo-iro: rgb(93, 140, 174);
     --sora-iro: rgb(77, 143, 172);
@@ -43,6 +45,7 @@
     --black-text: var(--kurobeni);
     --font: 'Kiona-Regular', 'Montserrat-Regular', system-ui;
     /* may not work on all systems, not sure why */
+    --accent-color: var(--benimidori);
     font-family: var(--font);
 }
 

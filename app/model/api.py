@@ -1,6 +1,6 @@
-import json, copy, io
-import numpy as np
-from flask import Blueprint, Response, request
+import json, io
+from base64 import b64encode
+from flask import Blueprint, request, render_template
 from flask_expects_json import expects_json
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
@@ -56,7 +56,8 @@ def naive():
 
         output = io.BytesIO()
         FigureCanvas(fig).print_png(output)
-        return Response(output.getvalue(), mimetype='image/png')
-
+        dataurl = 'data:image/png;base64,' + b64encode(output.getvalue()).decode('ascii')
+        return render_template('image.jinja2', image_data=dataurl)
+    
     else:
         return json.dumps(out, indent=2)

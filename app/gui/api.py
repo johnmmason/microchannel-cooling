@@ -11,13 +11,13 @@ import io
 import numpy as np
 import json as js
 from config import base
+import gui.input as input
 ##################
 
 gui = Blueprint('gui', __name__)
 man = mp.Manager()
 
 ##################
-appcontext = None
 data = None # global variables to store data (a bit hacky, but this way we should have a loading screen)
 state = [man.Value('i',0), man.Value('i',0), man.Value('i', 0), man.dict({'out':"Not Computed Yet"})] # iteration, total-iterations, status, result
 states = ['Idle', 'Running', 'Done']
@@ -31,19 +31,32 @@ template_kwargs = {'template':"main", 'proxy':''}
 ##################
 # https://blog.miguelgrinberg.com/post/dynamically-update-your-flask-web-pages-using-turbo-flask
 
-
+# still working on this redirect for image
+@gui.route("/redirect/<path:target>")
+def redirect(target):
+    return input.Form([],action=target).render()
 
 @gui.route('/<method>', methods=['GET','POST'])
 def render(method) -> str:    
     global data, state
+    form = input.Form(
+            [
+                input.textarea('inpt',title="Naive Method Input")
+            ],
+            target="_blank",
+            refresh_period = refresh_period,
+            **template_kwargs)
 
     if rq.method == 'POST' and state[0].value == 0:
-        data = js.loads(rq.form['inpt'])
-        mp.Process(target=run, args=[f'/model/{method}', data, *state]).start()
-        return render_template("blank.jinja2", **template_kwargs, refresh_period = refresh_period)
+        try:
+            data = js.loads(rq.form['inpt'])
+            mp.Process(target=run, args=[f'/model/{method}', data, *state]).start()
+            return render_template("blank.jinja2", **template_kwargs, refresh_period = refresh_period)
+        except Exception as e:
+            return form.render(error=f"Invalid JSON input: \n\t\t{e}")
 
     elif data is None:
-        return render_template("form.jinja2", title="Naive Method Input", **template_kwargs, refresh_period = refresh_period)
+        return form.render()
     
     else: 
         return render_template("blank.jinja2", **template_kwargs, refresh_period = refresh_period)
@@ -51,15 +64,17 @@ def render(method) -> str:
 @gui.context_processor
 def inject_display():
     global data, state, refresh_period
+    centered = 'center'
     if data is None and state[0].value == 0:
         refresh_period = rf
         display="Loading ..."
     elif state[2].value == 2:
         refresh_period = inf
         display = f"<b> Status: {states[state[2].value]} </b> <br> Result : {state[3]['out']}"
+        centered = ''
     else:
         display = f"<b> Status: {states[state[2].value]} </b> <br> Iteration : {state[0].value}/{state[1].value}"
-    return {'display': display,}
+    return {'display': display,'centered': centered}
 
 def run(*args):
     cstate = args[2:]
@@ -69,7 +84,7 @@ def run(*args):
     # fake iteration to simulate a long running job
     for iteration in range(nit):
         cstate[0].value = iteration
-        sleep(0.5)
+        sleep(0.1)
 
     result = rqs.post(f'{base}{args[0]}', json=args[1])
 
