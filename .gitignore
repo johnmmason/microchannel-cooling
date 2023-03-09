@@ -3,3 +3,6 @@ __pycache__
 *~
 #*#
 *.venv
+/.vs/ProjectSettings.json
+/.vs/slnx.sqlite
+/.vs/microchannel-cooling/v16/.suo

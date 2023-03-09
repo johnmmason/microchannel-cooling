@@ -1,7 +1,14 @@
 from time import sleep
 import multiprocessing as mp
 from flask import Blueprint, request as rq, render_template, redirect, current_app
+from flask import Response
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.figure import Figure
 import requests as rqs
+import random
+import io
+import numpy as np
 import json as js
 from config import base
 ##################
@@ -77,3 +84,19 @@ def clear(method) -> str:
     state[2].value = 0
     state[3]['out'] = "Not Computed Yet"
     return redirect(f'/{method}')
+	
+@gui.route('/testplot')
+def plot_png():
+    fig = create_figure()
+    output = io.BytesIO()
+    FigureCanvas(fig).print_png(output)
+    return Response(output.getvalue(), mimetype='image/png')
+
+def create_figure():
+    fig = Figure()
+    axis = fig.add_subplot(1, 1, 1)
+    xs = range(100)
+    ys = [random.randint(1, 50) for x in xs]
+    axis.plot(xs, ys)
+    return fig
+

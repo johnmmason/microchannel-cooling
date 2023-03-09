@@ -3,7 +3,7 @@ naive = {
     "properties": {
         "L": {"type":"number"},
         "W": {"type":"number"},
-        "D": {"type":"number"},
+        "D": {"type":["number","object"]},
         "T_in": {"type":"number"},
         "T_w": {"type":"number"},
         "Q": {"type":"number"},
