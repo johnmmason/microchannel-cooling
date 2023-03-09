@@ -11,6 +11,7 @@ import io
 import numpy as np
 import json as js
 from config import base
+import gui.input as input
 ##################
 
 gui = Blueprint('gui', __name__)
@@ -35,14 +36,23 @@ template_kwargs = {'template':"main", 'proxy':''}
 @gui.route('/<method>', methods=['GET','POST'])
 def render(method) -> str:    
     global data, state
+    form = input.Form(
+            [
+                input.textarea('inpt',title="Naive Method Input")
+            ],
+            refresh_period = refresh_period,
+            **template_kwargs)
 
     if rq.method == 'POST' and state[0].value == 0:
-        data = js.loads(rq.form['inpt'])
-        mp.Process(target=run, args=[f'/model/{method}', data, *state]).start()
-        return render_template("blank.jinja2", **template_kwargs, refresh_period = refresh_period)
+        try:
+            data = js.loads(rq.form['inpt'])
+            mp.Process(target=run, args=[f'/model/{method}', data, *state]).start()
+            return render_template("blank.jinja2", **template_kwargs, refresh_period = refresh_period)
+        except Exception as e:
+            return form.render(error=f"Invalid JSON input: \n\t\t{e}")
 
     elif data is None:
-        return render_template("form.jinja2", title="Naive Method Input", **template_kwargs, refresh_period = refresh_period)
+        return form.render()
     
     else: 
         return render_template("blank.jinja2", **template_kwargs, refresh_period = refresh_period)
