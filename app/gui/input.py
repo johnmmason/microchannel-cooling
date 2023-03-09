@@ -1,5 +1,7 @@
 # make html includes automatically
 from flask import render_template
+import requests as rqs
+from config import base
 
 ############ fields ############
 # https://codepen.io/stevenkuipers/pen/OrRroX
@@ -82,3 +84,6 @@ class Form():
     def render(self, **kwargs):
         self.default_kwargs.update(kwargs)
         return render_template("form.jinja2", raster = self.fields, **self.default_kwargs)
+    
+def redirect_to(url):
+    return rqs.post(f'{base}/redirect/{url}')

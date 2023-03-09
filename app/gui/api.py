@@ -31,7 +31,10 @@ template_kwargs = {'template':"main", 'proxy':''}
 ##################
 # https://blog.miguelgrinberg.com/post/dynamically-update-your-flask-web-pages-using-turbo-flask
 
-
+# still working on this redirect for image
+@gui.route("/redirect/<path:target>")
+def redirect(target):
+    return input.Form([],action=target).render()
 
 @gui.route('/<method>', methods=['GET','POST'])
 def render(method) -> str:    
@@ -40,6 +43,7 @@ def render(method) -> str:
             [
                 input.textarea('inpt',title="Naive Method Input")
             ],
+            target="_blank",
             refresh_period = refresh_period,
             **template_kwargs)
 
@@ -60,15 +64,17 @@ def render(method) -> str:
 @gui.context_processor
 def inject_display():
     global data, state, refresh_period
+    centered = 'center'
     if data is None and state[0].value == 0:
         refresh_period = rf
         display="Loading ..."
     elif state[2].value == 2:
         refresh_period = inf
         display = f"<b> Status: {states[state[2].value]} </b> <br> Result : {state[3]['out']}"
+        centered = ''
     else:
         display = f"<b> Status: {states[state[2].value]} </b> <br> Iteration : {state[0].value}/{state[1].value}"
-    return {'display': display,}
+    return {'display': display,'centered': centered}
 
 def run(*args):
     cstate = args[2:]
@@ -78,7 +84,7 @@ def run(*args):
     # fake iteration to simulate a long running job
     for iteration in range(nit):
         cstate[0].value = iteration
-        sleep(0.5)
+        sleep(0.1)
 
     result = rqs.post(f'{base}{args[0]}', json=args[1])
 
