@@ -1,35 +1,20 @@
-/* Scrollbar styling */
-
-:root {
-    --aijiro: rgba(235, 246, 247, 1);
-    --hakushi: rgb(249, 251, 255);
-    --kokushoku: rgb(23, 20, 18);
-}
-
-
-/* width */
-
-::-webkit-scrollbar {
-    width: 10px;
-}
-
-
-/* Track */
-
-::-webkit-scrollbar-track {
-    background: var(--kokushoku);
-}
-
-
-/* Handle */
-
+ /* width */
+ 
+ ::-webkit-scrollbar {
+     width: 10px;
+ }
+ /* Track */
+ 
+ ::-webkit-scrollbar-track {
+     background: var(--kokushoku);
+ }
+ /* Handle */
+ 
  ::-webkit-scrollbar-thumb {
-    background: var(--aijiro);
-}
-
-
-/* Handle on hover */
-
+     background: var(--aijiro);
+ }
+ /* Handle on hover */
+ 
  ::-webkit-scrollbar-thumb:hover {
-    background: var(--hakushi);
-}
+     background: var(--hakushi);
+ }

@@ -1,14 +1,9 @@
-from time import sleep
 import multiprocessing as mp
 from flask import Blueprint, request as rq, render_template, redirect, current_app
 from flask import Response
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from matplotlib.figure import Figure
 import requests as rqs
 import random
 import io
-import numpy as np
 import json as js
 from config import base
 import gui.input as input
@@ -27,7 +22,7 @@ rf = 1
 inf = 1e6
 refresh_period = 1
 ##################
-template_kwargs = {'template':"main", 'proxy':''}
+template_kwargs = {'template':"main", 'proxy':'', 'base':"layout.jinja2"}
 ##################
 # https://blog.miguelgrinberg.com/post/dynamically-update-your-flask-web-pages-using-turbo-flask
 
@@ -36,12 +31,12 @@ template_kwargs = {'template':"main", 'proxy':''}
 def redirect(target):
     return input.Form([],action=target).render()
 
-@gui.route('/<method>', methods=['GET','POST'])
+@gui.route('/flask/<method>', methods=['GET','POST'])
 def render(method) -> str:    
     global data, state
     form = input.Form(
             [
-                input.textarea('inpt',title="Naive Method Input")
+                input.textarea('inpt',title="Naive Method Input"),
             ],
             target="_blank",
             refresh_period = refresh_period,
@@ -76,6 +71,8 @@ def inject_display():
         display = f"<b> Status: {states[state[2].value]} </b> <br> Iteration : {state[0].value}/{state[1].value}"
     return {'display': display,'centered': centered}
 
+
+from time import sleep
 def run(*args):
     cstate = args[2:]
     nit = 10
@@ -91,7 +88,7 @@ def run(*args):
     cstate[2].value = 2
     cstate[3]['out'] = result.text
 
-@gui.route('/<method>/clear', methods=['GET','POST'])
+@gui.route('/flask/<method>/clear', methods=['GET','POST'])
 def clear(method) -> str:
     global data, state
     data = None
@@ -101,6 +98,12 @@ def clear(method) -> str:
     state[3]['out'] = "Not Computed Yet"
     return redirect(f'/{method}')
 	
+ 
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.figure import Figure
+ 
+ 
 @gui.route('/testplot')
 def plot_png():
     fig = create_figure()
