@@ -20,6 +20,11 @@ gui.appcontext = app.app_context()
 app.register_blueprint(model, url_prefix='/model')
 app.register_blueprint(gui, url_prefix='/')
 
+# dashapp example
+from gui.naive_app import make_naive_app
+with app.app_context():
+    app = make_naive_app(app, '/naive/')
+
 
 @app.route("/")
 def hello_world():

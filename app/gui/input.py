@@ -70,6 +70,7 @@ class Form():
     default_kwargs = {
         'template':"main",
         'proxy':'',
+        'base':"layout.jinja2",
         'title':"Naive Method Input",
         'action':'',
         'method':'POST',
