@@ -23,7 +23,7 @@ def make_naive_app(server, prefix):
         html.Div(["Inlet Temperature (C):", dcc.Input(id='temp-inlet', value='20', type='text')]),
         html.Div(["Wall Temperature (C):", dcc.Input(id='temp-wall', value='100', type='text')]),
         html.Div(["Flow Rate (uL/min):", dcc.Input(id='flow-rate', value='100', type='text')]),
-        dcc.Graph(id='plot')
+        html.Div([dcc.Graph(id='plot')], style={'width': '80vw', 'min-width': '700px'})
     ])
 
     @app.callback(
