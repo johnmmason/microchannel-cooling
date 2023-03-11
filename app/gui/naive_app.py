@@ -2,6 +2,7 @@ import numpy as np
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from dash import dcc, html, Input, Output
+import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 from gui.dash_template import new_app
 from model.naive_model import MicroChannelCooler, Geometry
@@ -16,14 +17,20 @@ def make_naive_app(server, prefix):
     # don't use H2 - that is reserved for dropdowns in Flask right now
     app.layout = html.Div([
         html.H1("Microchannel Cooling, Naive Method"),
-        html.Div(["Length (m):", dcc.Input(id='length', value='0.1', type='text')]),
-        html.Div(["Width (um):", dcc.Input(id='width', value='100', type='text')]),
-        html.Div(["Depth (um):", dcc.Input(id='depth-from', value='10', type='text'),
-                " to ", dcc.Input(id='depth-to', value='50', type='text')]),
-        html.Div(["Inlet Temperature (C):", dcc.Input(id='temp-inlet', value='20', type='text')]),
-        html.Div(["Wall Temperature (C):", dcc.Input(id='temp-wall', value='100', type='text')]),
-        html.Div(["Flow Rate (uL/min):", dcc.Input(id='flow-rate', value='100', type='text')]),
-        html.Div([dcc.Graph(id='plot')], style={'width': '80vw', 'min-width': '700px'})
+        dbc.Row([
+            dbc.Col([
+                html.Div(["Length (m):", dcc.Input(id='length', value='0.1', type='text')]),
+                html.Div(["Width (um):", dcc.Input(id='width', value='100', type='text')]),
+                html.Div(["Depth (um):", dcc.Input(id='depth-from', value='10', type='text'),
+                        " to ", dcc.Input(id='depth-to', value='50', type='text')]),
+                html.Div(["Inlet Temperature (C):", dcc.Input(id='temp-inlet', value='20', type='text')]),
+                html.Div(["Wall Temperature (C):", dcc.Input(id='temp-wall', value='100', type='text')]),
+                html.Div(["Flow Rate (uL/min):", dcc.Input(id='flow-rate', value='100', type='text')]),
+                ], style={'width': '20vw'}),
+            dbc.Col([
+                html.Div([dcc.Graph(id='plot')], style={'width': '70vw', 'min-width': '700px'}),
+                ]),
+        ]),
     ])
 
     @app.callback(
