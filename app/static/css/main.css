@@ -62,7 +62,7 @@
     display: block;
     padding: 10px 10px;
     backdrop-filter: blur(10px);
-    --webkit-backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     color: var(--kokushoku);
     border-radius: 5px;
 }
@@ -71,5 +71,5 @@ textarea {
     background-color: rgba(1, 1, 1, 0.0);
     color: var(--kokushoku);
     backdrop-filter: brightness(1.5) saturate(0.25) contrast(0.75);
-    --webkit-backdrop-filter: brightness(1.5) saturate(0.25) contrast(0.75);
+    -webkit-backdrop-filter: brightness(1.5) saturate(0.25) contrast(0.75);
 }
