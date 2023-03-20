@@ -6,8 +6,7 @@ import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 from gui.dash_template import new_app
 from model.naive_model import MicroChannelCooler, Geometry
-from model.fluids import water
-
+from model.fluids import water, ethylene_glycol, silicon_dioxide_nanofluid, mineral_oil
 
 def make_naive_app(server, prefix):
 
@@ -19,6 +18,7 @@ def make_naive_app(server, prefix):
         html.H1("Microchannel Cooling, Naive Method"),
         dbc.Row([
             dbc.Col([
+				html.Div(["Select a Fluid", dcc.Dropdown(['Water','Ethylene glycol','Silicon dioxide nanofluid','Mineral oil'], value = 'Water', id='fluid')]),
                 html.Div(["Length (m):", dcc.Input(id='length', value='0.1', type='text')]),
                 html.Div(["Width (um):", dcc.Input(id='width', value='100', type='text')]),
                 html.Div(["Depth (um):", dcc.Input(id='depth-from', value='10', type='text'),
@@ -30,11 +30,12 @@ def make_naive_app(server, prefix):
             dbc.Col([
                 html.Div([dcc.Graph(id='plot')], style={'width': '70vw', 'min-width': '700px'}),
                 ]),
-        ]),
+        ]),		
     ])
 
     @app.callback(
         Output(component_id='plot', component_property='figure'),
+        Input('fluid','value'),
         Input('length','value'),
         Input('width','value'),
         Input('depth-from','value'),
@@ -43,11 +44,22 @@ def make_naive_app(server, prefix):
         Input('temp-wall','value'),
         Input('flow-rate', 'value')
     )
-    def update_output_div(length, width, depth_from, depth_to, temp_inlet, temp_wall, flow_rate):
+    def update_output_div(fluid, length, width, depth_from, depth_to, temp_inlet, temp_wall, flow_rate):
 
         try:
             L = float(length) # length of microchannel [m]
             W = float(width) * 1e-6 # width of microchannel [m]
+
+            if fluid == 'Water':
+                F = water
+            elif fluid == 'Ethylene glycol':
+                F = ethylene_glycol
+            elif fluid == 'Silicon dioxide nanofluid':
+                F = silicon_dioxide_nanofluid
+            elif fluid == 'Mineral oil':
+                F = mineral_oil
+            else:
+                F = water
             
             T_in = float(temp_inlet)  + 273 # temperature of inlet [K]
             T_w = float(temp_wall) + 273 # temperature of wall [K]
@@ -62,7 +74,7 @@ def make_naive_app(server, prefix):
             raise PreventUpdate
 
         geom = Geometry(L, W, D)
-        cooler = MicroChannelCooler(geom, water, T_in, T_w, Q)
+        cooler = MicroChannelCooler(geom, F, T_in, T_w, Q)
         q, dP, T_out = cooler.solve()
 
         fig = make_subplots(rows=1, cols=2, column_widths=[.5, .5])
