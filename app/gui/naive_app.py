@@ -18,7 +18,8 @@ def make_naive_app(server, prefix):
         html.H1("Microchannel Cooling, Naive Method"),
         dbc.Row([
             dbc.Col([
-				html.Div(["Select a Fluid", dcc.Dropdown(['Water','Ethylene glycol','Silicon dioxide nanofluid','Mineral oil'], value = 'Water', id='fluid')]),
+		html.Div(["Select a Fluid", dcc.Dropdown(['Water','Ethylene glycol','Silicon dioxide nanofluid','Mineral oil'], value = 'Water', id='fluid')],
+                         style={'padding-right':'10px'}),
                 html.Div(["Length (m):", dcc.Input(id='length', value='0.1', type='text')]),
                 html.Div(["Width (um):", dcc.Input(id='width', value='100', type='text')]),
                 html.Div(["Depth (um):", dcc.Input(id='depth-from', value='10', type='text'),
