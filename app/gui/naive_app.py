@@ -7,7 +7,7 @@ from dash.exceptions import PreventUpdate
 from gui.dash_template import new_app
 from model.naive_model import MicroChannelCooler, Geometry
 from model.fluids import water, ethylene_glycol, silicon_dioxide_nanofluid, mineral_oil
-
+from config import update_style
 def make_naive_app(server, prefix):
 
     app = new_app(server, prefix, centered='center')
@@ -15,11 +15,16 @@ def make_naive_app(server, prefix):
     app.version = 0.1
     # don't use H2 - that is reserved for dropdowns in Flask right now
     app.layout = html.Div([
-        html.H1("Microchannel Cooling, Naive Method"),
-        dbc.Row([
-            dbc.Col([
-		html.Div(["Select a Fluid", dcc.Dropdown(['Water','Ethylene glycol','Silicon dioxide nanofluid','Mineral oil'], value = 'Water', id='fluid')],
-                         style={'padding-right':'10px'}),
+        html.H1("Microchannel Cooling, Naive Method", className='rh-align'),
+        html.Div([
+            html.Div([
+		        html.Div(["Select a Fluid",
+                    dcc.Dropdown(['Water',
+                                  'Ethylene glycol',
+                                  'Silicon dioxide nanofluid',
+                                  'Mineral oil'
+                                  ], value = 'Water', id='fluid')],
+                   ),
                 html.Div(["Length (m):", dcc.Input(id='length', value='0.1', type='text')]),
                 html.Div(["Width (um):", dcc.Input(id='width', value='100', type='text')]),
                 html.Div(["Depth (um):", dcc.Input(id='depth-from', value='10', type='text'),
@@ -27,11 +32,10 @@ def make_naive_app(server, prefix):
                 html.Div(["Inlet Temperature (C):", dcc.Input(id='temp-inlet', value='20', type='text')]),
                 html.Div(["Wall Temperature (C):", dcc.Input(id='temp-wall', value='100', type='text')]),
                 html.Div(["Flow Rate (uL/min):", dcc.Input(id='flow-rate', value='100', type='text')]),
-                ], style={'width': '20vw'}),
-            dbc.Col([
-                html.Div([dcc.Graph(id='plot')], style={'width': '70vw', 'min-width': '700px'}),
-                ]),
-        ]),		
+                ], className='input'),
+                html.Div(className='hspace'),
+                html.Div([dcc.Graph(id='plot')], className='plot'),
+        ], className='row'),		
     ])
 
     @app.callback(
@@ -89,7 +93,8 @@ def make_naive_app(server, prefix):
         fig.update_yaxes(title_text="Backpressure (psi)", row=1, col=2)
 
         fig.update_layout(height=600, showlegend=False)
-        
+        update_style(fig)
+            
         return fig
 
     return app.server

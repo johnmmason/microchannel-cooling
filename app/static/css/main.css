@@ -6,6 +6,7 @@
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
+    justify-content: space-evenly;
 }
 
 .wrap-x {
@@ -15,7 +16,7 @@
 .container {
     width: 100%;
     height: 100%;
-    padding: 1vh 1vw;
+    /* padding: 0.1vh 0.1vw; */
 }
 
 .center {
@@ -39,37 +40,86 @@
     justify-content: flex-end;
 }
 
+.lh-align {
+    text-align: left;
+}
+
+.rh-align {
+    text-align: right;
+}
+
 .leftAnimate {
     animation-name: leftAnimate;
     animation-duration: 1s;
     animation-delay: 0s;
 }
 
-.bkg {
-    background-color: #000000;
-    background-image: url("../img/bkg.png");
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: cover;
-    background-attachment: fixed;
-    z-index: -100;
+.bkg::before {
+    position: absolute;
+    content: "";
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
-    position: fixed;
+    z-index: -100;
+    background-repeat: repeat-x;
+    background-size: cover;
+    overflow: hidden;
+    background-color: white;
+    background-image: url("../img/bkg3.png");
+    background-blend-mode: difference;
+    filter: brightness(1.0) hue-rotate(-10deg) saturate(0.7) brightness(1.4) hue-rotate(-200deg);
+    /*-15, -185 */
+    /* TODO adjust until clarity is reached*/
+}
+
+.bkg {
+    background: transparent;
+    /* background-blend-mode: soft-light; */
+    filter: none;
+    transform: none;
 }
 
 .text {
     display: block;
     padding: 10px 10px;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    /* backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px); */
     color: var(--kokushoku);
     border-radius: 5px;
+}
+
+h1 {
+    padding-left: 2rem;
+    padding-right: 2rem;
+}
+
+.input {
+    width: 20%;
+    left: 0px;
+    padding-top: 10%;
+    padding-bottom: 10%;
+    padding-left: 10px;
+    padding-right: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    flex-wrap: wrap;
+}
+
+.hspace {
+    content: "";
+    width: 8%;
+}
+
+.plot {
+    width: 62%;
+    min-width: 700px;
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
 }
 
 textarea {
     background-color: rgba(1, 1, 1, 0.0);
     color: var(--kokushoku);
-    backdrop-filter: brightness(1.5) saturate(0.25) contrast(0.75);
-    -webkit-backdrop-filter: brightness(1.5) saturate(0.25) contrast(0.75);
 }
