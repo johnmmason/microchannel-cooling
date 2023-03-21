@@ -59,14 +59,14 @@ def render(method) -> str:
 @gui.context_processor
 def inject_display():
     global data, state, refresh_period
-    centered = 'center'
+    centered = 'row center wrap-x'
     if data is None and state[0].value == 0:
         refresh_period = rf
         display="Loading ..."
     elif state[2].value == 2:
         refresh_period = inf
         display = f"<b> Status: {states[state[2].value]} </b> <br> Result : {state[3]['out']}"
-        centered = ''
+        centered = 'row wrap-x'
     else:
         display = f"<b> Status: {states[state[2].value]} </b> <br> Iteration : {state[0].value}/{state[1].value}"
     return {'display': display,'centered': centered}
