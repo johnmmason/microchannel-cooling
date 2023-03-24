@@ -18,13 +18,14 @@ def make_naive_app(server, prefix):
         html.H1("Microchannel Cooling, Naive Method", className='rh-align'),
         html.Div([
             html.Div([
-                html.Div(["Choose a parameter to optimize:",
-                    dcc.RadioItems([
-                                 {'label': 'Length', 'value': 'length'},
-                                 {'label': 'Width', 'value': 'width'},
-                                 {'label': 'Depth', 'value': 'depth'}
-                                 ], value = 'depth', id = 'opt')],
-                   ),
+                #html.Div(["Choose a parameter to optimize:",
+                #    dcc.RadioItems([
+                #                 {'label': 'Length', 'value': 'length'},
+                #                 {'label': 'Width', 'value': 'width'},
+                #                 {'label': 'Depth', 'value': 'depth'},
+                #                 {'label': 'No Optimization', 'value': 'no'},
+                #                 ], value = 'no', id = 'opt')],
+                #   ),
 		        html.Div(["Select a Fluid",
                     dcc.Dropdown(['Water',
                                   'Ethylene glycol',
