@@ -82,7 +82,7 @@ The Prandtl number for the flow [$ul$]
 
 where $c_p$ is the specific heat of the fluid, $\mu$ is the viscosity of the fluid, and $k$ is the thermal conductivity of the fluid. \\
 
-The Nusselt number for the flow [$ul$] is calculated using the Reynolds number and the Prandtl number.
+The Nusselt number for the flow [$ul$] is calculated using the Reynolds number and the Prandtl number. This is an empirical equation, for fully developed laminar flow in a circular pipe.
 
 \begin{equation}
 	Nu = 0.023 * Re^{4/5} * Pr^{1/3}
@@ -114,7 +114,7 @@ The pressure loss, $dP$ [$Pa$]
 	dP = \frac{ f L \rho v^2 }{2D}
 \end{equation}
 
-where $f$ is $64/Re$, $L$ is the channel length, $\rho$ is the fluid density, $v$ is the fluid velocity, and $D$ is the channel depth.
+where $f$, the Fanning friction factor, is $(64/Re)$, $L$ is the channel length, $\rho$ is the fluid density, $v$ is the fluid velocity, and $D$ is the channel depth.
 
 \subsection{Outlet Temperature}
 
@@ -125,5 +125,8 @@ The outlet temperature, $T_{out}$ [$K$]
 \end{equation}
 
 where $T_{in}$ is the inlet temperature, $q$ is the heat flux, $Q$ is the flow rate, $\rho$ is the fluid density, and $c_p$ is the specific heat of the fluid.  The constant $1.67 \times 10_{-4}$ ensures dimensional consistency.
+
+\section{References}
+Primary reference: Ch.3 (Single-Phase Liquid Flow In Minichannels and Microchannels) of Kandilikar, S. Heat Transfer and fluid flow in minichannels and microchannels.
 
 \end{document}
