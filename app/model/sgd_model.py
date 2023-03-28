@@ -4,14 +4,16 @@ import torch
 
 from torch.autograd import Variable
 from naive_model import Geometry, MicroChannelCooler
-from fluids import Fluid, water
+from fluids import Fluid, water, ethylene_glycol, silicon_dioxide_nanofluid, mineral_oil
 
     
-def sgd_model(L, W, D, rho, mu, cp, k, T_in, T_w, Q, optimize_type):
+def sgd_model(L, W, D, rho, mu, cp, k, T_in, T_w, Q, parameter_choice, optimize_type):
     """
     Optimization using stochastic gradient-based optimization with PyTorch.
 
     Assuming we want to minimize the pressure drop (dP) while maintaining a certain level of heat flux (q). 
+
+    TODO: 
 
     Parameters:
         L (float): Channel length [m]
@@ -24,22 +26,30 @@ def sgd_model(L, W, D, rho, mu, cp, k, T_in, T_w, Q, optimize_type):
         T_in (float): Fluid inlet temperature [K]
         T_w (float): Fluid wall temperature [K]
         Q (float): Fluid flow rate [uL/min]
-        optimize_type (string): Pick a parameter to optimize: 'q', 'dP', 'T_out'
+        optimize_type (string): Pick a parameter to optimize: 'default', 'q', 'dP', 'T_out'
+        parameter_choice (array): Given user parameters to optimize for. If parameters are picked, they will not be kept constant, allowing those parameters to be optimized.
+        
 
     Returns:
-        q (float): Heat flux [W/m^2]
-        dP (float): Pressure drop [Pa]
-        T_out (float): Outlet temperature [K]
+        L (float): optimized length [m]
+        W (float): optimized width [m]
+        D (float): optimized depth [m]
     """
+
+    # Keep track of old variables
+    L_old = torch.tensor(L, dtype=torch.float32, requires_grad=True)
+    W_old = torch.tensor(W, dtype=torch.float32, requires_grad=True)
+    D_old = torch.tensor(D, dtype=torch.float32, requires_grad=True)
 
     # Step 1: Create PyTorch Variables for the input parameters
     L = Variable(torch.tensor(L, dtype=torch.float32), requires_grad=True)
     W = Variable(torch.tensor(W, dtype=torch.float32), requires_grad=True)
     D = Variable(torch.tensor(D, dtype=torch.float32), requires_grad=True)
 
+
     # Step 2: Set the optimization hyperparameters
     learning_rate = 1e-5
-    num_iterations = 1000
+    num_iterations = 100
 
     # Step 3: Initialize the optimizer
     optimizer = torch.optim.SGD([L, W, D], lr=learning_rate)
@@ -76,14 +86,15 @@ def sgd_model(L, W, D, rho, mu, cp, k, T_in, T_w, Q, optimize_type):
 
         # Calculate objective
           # Default. Minimizing the pressure drop and maximizing the heat flux.
-          # Heat flux q. Minimize the heat flux q. 
+          # Heat flux q. Minimize the negative of the heat flux q. 
           # Pressure drop dP. Minimize pressure drop dP. 
           # Outlet temperature T_out. Minimize the temperature difference between the outlet and inlet temperatures, as to minimize the temperature rise in the fluid. Thus, the objective is defined as (T_out - T_in) ** 2 to penalize large temperature differences
         
         if optimize_type == 'default':
-            objective = dP_torch - q_torch
+            objective = dP_torch - q_torch - 1e25*(L ** 2) 
+            # print(objective.item())
         elif optimize_type == 'q':
-            objective = q_torch     # Not sure if this objective is correct. 
+            objective = -q_torch     # Email Tejawsi about manufacturing constraints s.t. we'll have ranges to clamp on.
         elif optimize_type == 'dP':
             objective = dP_torch
         elif optimize_type == 'T_out':
@@ -91,6 +102,7 @@ def sgd_model(L, W, D, rho, mu, cp, k, T_in, T_w, Q, optimize_type):
         else:
             raise ValueError("Invalid optimize_type, must be 'q', 'dP', or 'T_out'")
 
+        
 
         # Compute the gradients
         objective.backward()
@@ -98,31 +110,49 @@ def sgd_model(L, W, D, rho, mu, cp, k, T_in, T_w, Q, optimize_type):
         # Update the parameters
         optimizer.step()
 
+        # Clamp L
+        if "L" not in parameter_choice:
+            L = L_old
+        else:
+            L = torch.clamp(L, min=5e-5)    # User input min-value, 5e-5 is an approximate for microchannel
+            L = L.detach()
+
+        W = torch.clamp(W, min=0, max=1)
+        W = W.detach()
+
+        D = torch.clamp(D, min=0, max=1)
+        D = D.detach()
+
     # Step 5: Post-process results
-    q = q_torch.detach().numpy()
-    dP = dP_torch.detach().numpy()
+    L = L.detach().numpy()
+    W = W.detach().numpy()
+    D = D.detach().numpy()
 
     # Step 6: Return results
-    return q, dP, T_out
+    return L, W, D
 
 
 class SGD_MicroChannelCooler(MicroChannelCooler):
 
-    def solve_sgd(self, optimize_type='default'):
+    def solve_sgd(self, parameter_choice, optimize_type='default'):
         '''
-        Returns the heat flux, pressure drop, and output temperature using the gradient descent method w/ PyTorc
+        Returns the optimized length, width, and depth using the gradient descent method w/ PyTorc
+
+        Parameters:
+            parameter_choice (array): Given user parameters to optimize for. If parameters are picked, they will not be kept constant, allowing those parameters to be optimized.
+            optimize_type (string): Pick a parameter to optimize: 'default', 'q', 'dP', 'T_out'
 
         Returns:
-            q : the heat flux [W/m^2]
-            dP : the pressure loss [Pa]
-            T_out : the outlet temperature [K]
+            L (float): optimized length [m]
+            W (float): optimized width [m]
+            D (float): optimized depth [m]
         '''
 
-        q, dP, T_out = sgd_model(self.geometry.L, self.geometry.W, self.geometry.D,
+        L, W, D = sgd_model(self.geometry.L, self.geometry.W, self.geometry.D,
                                    self.fluid.rho, self.fluid.mu, self.fluid.cp, self.fluid.k,
-                                   self.T_in, self.T_w, self.Q, optimize_type)
+                                   self.T_in, self.T_w, self.Q, parameter_choice, optimize_type)
 
-        return q, dP, T_out
+        return L, W, D
     
 
 if __name__ == '__main__':
@@ -143,35 +173,39 @@ if __name__ == '__main__':
 
     for D_scalar in D:
         geom = Geometry(L, W, D_scalar)
-        cooler = SGD_MicroChannelCooler(geom, water, T_in, T_w, 100)
-        q, dP, T_out = cooler.solve_sgd(optimize_type='dP')
-        q_list.append(q)
-        dP_list.append(dP)
-        T_out_list.append(T_out)
+        cooler = SGD_MicroChannelCooler(geom, ethylene_glycol, T_in, T_w, 100)
+        L_optimized, W_optimized, D_optimized = cooler.solve_sgd(parameter_choice = [], optimize_type='default')
+        # q_list.append(q)
+        # dP_list.append(dP)
+        # T_out_list.append(T_out)
 
-    q = np.array(q_list)
-    dP = np.array(dP_list)
-    T_out = T_out.detach().numpy()
+    print("Optimized L, W, D.")
+    print("L: ", L_optimized, " W: ", W_optimized, " D: ", D_optimized)
+
+    # q = np.array(q_list)
+    # dP = np.array(dP_list)
+    # T_out = T_out.detach().numpy()
+
 
     # Plot
-    fig, (ax1, ax2) = plt.subplots(1, 2)
+    # fig, (ax1, ax2) = plt.subplots(1, 2)
 
-    fig.set_figwidth(10)
-    fig.set_figheight(6)
-    fig.tight_layout(pad=4)
+    # fig.set_figwidth(10)
+    # fig.set_figheight(6)
+    # fig.tight_layout(pad=4)
 
-    # Plot naive model results
-    ax1.plot(D, dP * 0.000145038)
-    ax1.set_title("Naive Model")
-    ax1.set_xlabel("D ($\mu m$)")
-    ax1.set_ylabel("$\delta P$ (psi)")
-    ax1.set_xscale("log")
+    # # Plot naive model results
+    # ax1.plot(D, dP * 0.000145038)
+    # ax1.set_title("Naive Model")
+    # ax1.set_xlabel("D ($\mu m$)")
+    # ax1.set_ylabel("$\delta P$ (psi)")
+    # ax1.set_xscale("log")
 
-    # Plot optimized results
-    ax2.plot(D, np.array(dP_list) * 0.000145038)
-    ax2.set_title("Optimized Model (SGD)")
-    ax2.set_xlabel("D ($\mu m$)")
-    ax2.set_ylabel("$\delta P$ (psi)")
-    ax2.set_xscale("log")
+    # # Plot optimized results
+    # ax2.plot(D, np.array(dP_list) * 0.000145038)
+    # ax2.set_title("Optimized Model (SGD)")
+    # ax2.set_xlabel("D ($\mu m$)")
+    # ax2.set_ylabel("$\delta P$ (psi)")
+    # ax2.set_xscale("log")
 
-    plt.show()
+    # plt.show()
