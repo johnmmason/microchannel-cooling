@@ -122,14 +122,23 @@ def make_naive_app(server, prefix):
 
         errs = []
         try:
-            if float(depth_from) >= 100 or float(depth_from) > float(depth_to):
+            if float(length) < 0 or float(length) > 0.1:
+                errs.append('Length')
+
+            if float(width) < 0 or float(width) > 1000:
+                errs.append('Width')
+
+            if float(depth_from) < 0 or float(depth_from) >= 100 or float(depth_from) >= float(depth_to):
                 errs.append('Depth (start)')
 
-            if float(depth_to) > 100:
+            if float(depth_to) <= 0 or float(depth_to) > 100:
                 errs.append('Depth (end)')
 
-            if float(temp_inlet) > 20:
+            if float(temp_inlet) <= 0 or float(temp_inlet) > 20:
                 errs.append('Inlet Temperature')
+
+            if float(temp_wall) < float(temp_inlet):
+                errs.append('Wall Temperature')
 
             if float(flow_rate) < 1:
                 errs.append('Flow Rate')
