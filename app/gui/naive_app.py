@@ -1,7 +1,8 @@
+import json
 import numpy as np
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
-from dash import dcc, html, Input, Output
+from dash import dcc, html, Input, Output, ctx
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 from gui.dash_template import new_app
@@ -40,10 +41,12 @@ def make_naive_app(server, prefix):
                 html.Div(["Inlet Temperature (C):", dcc.Input(id='temp-inlet', value='20', type='text')]),
                 html.Div(["Wall Temperature (C):", dcc.Input(id='temp-wall', value='100', type='text')]),
                 html.Div(["Flow Rate (uL/min):", dcc.Input(id='flow-rate', value='100', type='text')]),
+                html.Br(),
+                html.Div(id='err')
                 ], className='input'),
                 html.Div(className='hspace'),
                 html.Div([dcc.Graph(id='plot')], className='plot'),
-        ], className='row'),		
+        ], className='row'),
     ])
 
     @app.callback(
@@ -105,4 +108,51 @@ def make_naive_app(server, prefix):
             
         return fig
 
+    @app.callback(
+        Output('err', 'children'),
+        Input('length','value'),
+        Input('width','value'),
+        Input('depth-from','value'),
+        Input('depth-to','value'),
+        Input('temp-inlet','value'),
+        Input('temp-wall','value'),
+        Input('flow-rate', 'value')
+    )
+    def update_warning_div(length, width, depth_from, depth_to, temp_inlet, temp_wall, flow_rate):
+
+        errs = []
+        try:
+            if float(depth_from) >= 100 or float(depth_from) > float(depth_to):
+                errs.append('Depth (start)')
+
+            if float(depth_to) > 100:
+                errs.append('Depth (end)')
+
+            if float(temp_inlet) > 20:
+                errs.append('Inlet Temperature')
+
+            if float(flow_rate) < 1:
+                errs.append('Flow Rate')
+
+            if float(flow_rate) > 1000:
+                errs.append('Flow Rate')
+
+        except ValueError:
+            raise PreventUpdate
+
+        if len(errs) > 0:
+
+            div_contents = [
+                'The following parameters are out of bounds:',
+                html.Br(), html.Br()
+                ]
+
+            for e in errs:
+                div_contents.append(e)
+                div_contents.append(html.Br())
+            
+            return html.Div(div_contents)
+                            
+        else : return ""
+    
     return app.server
