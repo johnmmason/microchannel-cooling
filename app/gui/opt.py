@@ -2,6 +2,7 @@ import numpy as np
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from dash import dcc, html, Input, Output
+import diskcache
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 from gui.dash_template import new_app, new_app_opt
@@ -9,13 +10,13 @@ from model.naive_model import MicroChannelCooler, Geometry
 from model.fluids import water, ethylene_glycol, silicon_dioxide_nanofluid, mineral_oil
 from dash.long_callback import DiskcacheLongCallbackManager
 from config import update_style
+import time
 def make_naive_app_opt(server, prefix):
 
-    import diskcache
     cache = diskcache.Cache("./cache")
-    long_callback_manager = DiskcacheLongCallbackManager(cache)
+    long_manager = DiskcacheLongCallbackManager(cache)
 
-    app = new_app_opt(server, prefix, long_callback_manager, centered='center')
+    app = new_app_opt(server, prefix, long_manager, centered='center')
     app.title = "Naive Model"
     app.version = 0.1
     # don't use H2 - that is reserved for dropdowns in Flask right now
@@ -73,7 +74,8 @@ def make_naive_app_opt(server, prefix):
     def callback(set_progress, n_clicks):
         total = 10
         for i in range(total):
-            time.sleep(0.5)
+            time.sleep(20)
             set_progress((str(i + 1), str(total)))
         return [f"Clicked {n_clicks} times"]
+    return app.server
 
