@@ -13,8 +13,6 @@ def sgd_model(L, W, D, rho, mu, cp, k, T_in, T_w, Q, parameter_choice, optimize_
 
     Assuming we want to minimize the pressure drop (dP) while maintaining a certain level of heat flux (q). 
 
-    TODO: 
-
     Parameters:
         L (float): Channel length [m]
         W (float): Channel width [m]
@@ -114,14 +112,20 @@ def sgd_model(L, W, D, rho, mu, cp, k, T_in, T_w, Q, parameter_choice, optimize_
         if "L" not in parameter_choice:
             L = L_old
         else:
-            L = torch.clamp(L, min=5e-5)    # User input min-value, 5e-5 is an approximate for microchannel
+            L = torch.clamp(L, min=5e-5)    # Can change to a user inputted min-value; 5e-5 is an approximate for microchannel
             L = L.detach()
 
-        W = torch.clamp(W, min=0, max=1)
-        W = W.detach()
+        if "W" not in parameter_choice:
+            W = W_old
+        else:
+            W = torch.clamp(W, min=5e-5, max=1)
+            W = W.detach()
 
-        D = torch.clamp(D, min=0, max=1)
-        D = D.detach()
+        if "D" not in parameter_choice:
+            D = D_old
+        else:
+            D = torch.clamp(D, min=5e-5, max=1)
+            D = D.detach()
 
     # Step 5: Post-process results
     L = L.detach().numpy()
@@ -167,9 +171,9 @@ if __name__ == '__main__':
     Q = 100 # flow rate [uL/min]
 
     
-    q_list = []
-    dP_list = []
-    T_out_list = []
+    # q_list = []
+    # dP_list = []
+    # T_out_list = []
 
     for D_scalar in D:
         geom = Geometry(L, W, D_scalar)
