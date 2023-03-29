@@ -77,3 +77,4 @@ def make_naive_app_opt(server, prefix):
             set_progress((str(i + 1), str(total)))
         return [f"Clicked {n_clicks} times"]
 
+    return app.server

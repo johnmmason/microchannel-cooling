@@ -8,6 +8,7 @@ from dash.exceptions import PreventUpdate
 from gui.dash_template import new_app
 from model.naive_model import MicroChannelCooler, Geometry
 from model.fluids import water, ethylene_glycol, silicon_dioxide_nanofluid, mineral_oil
+from model.limits import test_input
 from config import update_style
 def make_naive_app(server, prefix):
 
@@ -118,41 +119,24 @@ def make_naive_app(server, prefix):
         Input('temp-wall','value'),
         Input('flow-rate', 'value')
     )
-    def update_warning_div(length, width, depth_from, depth_to, temp_inlet, temp_wall, flow_rate):
-
-        errs = []
-        try:
-            if float(length) < 0 or float(length) > 0.1:
-                errs.append('Length')
-
-            if float(width) < 0 or float(width) > 1000:
-                errs.append('Width')
-
-            if float(depth_from) < 0 or float(depth_from) >= 100 or float(depth_from) >= float(depth_to):
-                errs.append('Depth (start)')
-
-            if float(depth_to) <= 0 or float(depth_to) > 100:
-                errs.append('Depth (end)')
-
-            if float(temp_inlet) <= 0 or float(temp_inlet) > 20:
-                errs.append('Inlet Temperature')
-
-            if float(temp_wall) < float(temp_inlet):
-                errs.append('Wall Temperature')
-
-            if float(flow_rate) < 1:
-                errs.append('Flow Rate')
-
-            if float(flow_rate) > 1000:
-                errs.append('Flow Rate')
-
-        except ValueError:
-            raise PreventUpdate
+    def update_warning_div(L, W, D_from, D_to, T_in, T_w, Q):
+        # need to follow optimization convention
+        # convert to dict
+        args = {
+            'L': L,
+            'W': W,
+            'D_from': D_from,
+            'D_to': D_to,
+            'T_in': T_in,
+            'T_w': T_w,
+            'Q': Q
+        }
+        errs, block, severity = test_input()
 
         if len(errs) > 0:
 
             div_contents = [
-                'The following parameters are out of bounds:',
+                'The following parameters may be invalid:',
                 html.Br(), html.Br()
                 ]
 

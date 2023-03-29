@@ -23,13 +23,6 @@ gui.appcontext = app.app_context()
 app.register_blueprint(model, url_prefix='/model')
 app.register_blueprint(gui, url_prefix='/')
 
-# dashapp example
-from gui.naive_app import make_naive_app
-from gui.opt import make_naive_app_opt
-with app.app_context():
-    app = make_naive_app(app, '/naive/')
-    app = make_naive_app_opt(app, '/opt/')
-
 
 @app.route("/")
 def hello_world():
@@ -40,6 +33,15 @@ def hello_world():
        proxy='',
        filler="",
    ), 404
+
+
+# dashapp example
+from gui.naive_app import make_naive_app
+from gui.opt import make_naive_app_opt
+with app.app_context():
+    app = make_naive_app(app, '/naive/')
+    app = make_naive_app_opt(app, '/opt/')
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')

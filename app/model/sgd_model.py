@@ -7,7 +7,7 @@ import torch
 from torch.autograd import Variable
 from model.naive_model import Geometry, MicroChannelCooler
 from model.fluids import Fluid, water, ethylene_glycol, silicon_dioxide_nanofluid, mineral_oil
-
+from model.limits import clamp_variables
     
 def sgd_model(L, W, D, rho, mu, cp, k, T_in, T_w, Q, parameter_choice, optimize_type):
     """
@@ -111,23 +111,7 @@ def sgd_model(L, W, D, rho, mu, cp, k, T_in, T_w, Q, parameter_choice, optimize_
         optimizer.step()
 
         # Clamp L
-        if "L" not in parameter_choice:
-            L = L_old
-        else:
-            L = torch.clamp(L, min=5e-5)    # Can change to a user inputted min-value; 5e-5 is an approximate for microchannel
-            L = L.detach()
-
-        if "W" not in parameter_choice:
-            W = W_old
-        else:
-            W = torch.clamp(W, min=5e-5, max=1)
-            W = W.detach()
-
-        if "D" not in parameter_choice:
-            D = D_old
-        else:
-            D = torch.clamp(D, min=5e-5, max=1)
-            D = D.detach()
+        clamp_variables(self, parameter_choice)
 
     # Step 5: Post-process results
     L = L.detach().numpy()
@@ -177,11 +161,10 @@ if __name__ == '__main__':
     # dP_list = []
     # T_out_list = []
 
-    for D_scalar in D:
-        geom = Geometry(L, W, D_scalar)
-        cooler = SGD_MicroChannelCooler(geom, ethylene_glycol, T_in, T_w, 100)
-        L_optimized, W_optimized, D_optimized = cooler.solve_sgd(parameter_choice = [], optimize_type='default')
-        # q_list.append(q)
+    geom = Geometry(L, W, D)
+    cooler = SGD_MicroChannelCooler(geom, ethylene_glycol, T_in, T_w, 100)
+    L_optimized, W_optimized, D_optimized = cooler.solve_sgd(parameter_choice = [], optimize_type='default')
+    # q_list.append(q)
         # dP_list.append(dP)
         # T_out_list.append(T_out)
 
