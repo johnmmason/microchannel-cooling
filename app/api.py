@@ -22,8 +22,10 @@ app.register_blueprint(gui, url_prefix='/')
 
 # dashapp example
 from gui.naive_app import make_naive_app
+from gui.opt import make_naive_app_opt
 with app.app_context():
     app = make_naive_app(app, '/naive/')
+    app = make_naive_app_opt(app, '/opt/')
 
 
 @app.route("/")
