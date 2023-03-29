@@ -1,6 +1,9 @@
 #!/bin/python3
 from flask import Flask, render_template
 from config import title
+from dash.long_callback import DiskcacheLongCallbackManager
+import diskcache
+
 app = Flask(title)
 
 @app.errorhandler(404)
@@ -30,13 +33,13 @@ with app.app_context():
 
 @app.route("/")
 def hello_world():
-    return render_template(
-        "main.jinja2",
-        title=title,
-        template="main",
-        proxy='',
-        filler="",
-    ), 404
+   return render_template(
+       "main.jinja2",
+       title=title,
+       template="main",
+       proxy='',
+       filler="",
+   ), 404
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
