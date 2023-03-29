@@ -1,10 +1,12 @@
+#!/bin/python3
+
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
 
 from torch.autograd import Variable
-from naive_model import Geometry, MicroChannelCooler
-from fluids import Fluid, water, ethylene_glycol, silicon_dioxide_nanofluid, mineral_oil
+from model.naive_model import Geometry, MicroChannelCooler
+from model.fluids import Fluid, water, ethylene_glycol, silicon_dioxide_nanofluid, mineral_oil
 
     
 def sgd_model(L, W, D, rho, mu, cp, k, T_in, T_w, Q, parameter_choice, optimize_type):

@@ -2,7 +2,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from fluids import Fluid, water
+from model.fluids import Fluid, water
 
 def naive_model(L, W, D, rho, mu, cp, k, T_in, T_w, Q):
     # Uses the Naive Model to calculate heat flux, pressure drop, and output temperature
