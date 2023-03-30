@@ -2,7 +2,7 @@ import json
 import numpy as np
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
-from dash import dcc, html, Input, Output, ctx, MATCH
+from dash import dcc, html, Input, Output, ctx, MATCH, ALL
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 from gui.dash_template import new_app
@@ -113,7 +113,8 @@ def make_naive_app(server, prefix):
         Output({'type': 'in', 'name': MATCH},'valid'),
         Output({'type': 'in', 'name': MATCH}, 'invalid'),
         Input( {'type': 'in', 'name': MATCH},'value'),
-        Input( {'type': 'in', 'name': MATCH},'id')
+        Input( {'type': 'in', 'name': MATCH},'id'),
+        prevent_initial_call=True # seems to need this
     )
     def check_validity(value, cid):
         # print(cid)

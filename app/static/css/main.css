@@ -68,9 +68,24 @@
     background-color: white;
     background-image: url("../img/bkg3.png");
     background-blend-mode: difference;
-    filter: brightness(1.0) hue-rotate(-10deg) saturate(0.7) brightness(1.4) hue-rotate(-185deg);
+    /* filter: brightness(1.0) hue-rotate(-10deg) saturate(0.7) brightness(1.2) hue-rotate(-220deg); */
+    animation-name: lerp;
+    animation-duration: 480s;
+    animation-iteration-count: infinite;
     /*-15, -185, -200 */
     /* TODO adjust until clarity is reached*/
+}
+
+@keyframes lerp {
+    0% {
+        filter: brightness(1.0) hue-rotate(-10deg) saturate(0.7) brightness(1.2) hue-rotate(-185deg)
+    }
+    50% {
+        filter: brightness(1.0) hue-rotate(-10deg) saturate(0.7) brightness(1.2) hue-rotate(-155deg)
+    }
+    100% {
+        filter: brightness(1.0) hue-rotate(-10deg) saturate(0.7) brightness(1.2) hue-rotate(-185deg)
+    }
 }
 
 .bkg {
@@ -92,19 +107,6 @@
 h1 {
     padding-left: 2rem;
     padding-right: 2rem;
-}
-
-.input {
-    width: 20%;
-    left: 0px;
-    padding-top: 5%;
-    padding-bottom: 5%;
-    padding-left: 5%;
-    padding-right: 10px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-around;
-    flex-wrap: wrap;
 }
 
 .hspace {

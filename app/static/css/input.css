@@ -175,6 +175,19 @@ textarea {
     border-radius: 5%;
 }
 
+.input {
+    width: 20%;
+    left: 0px;
+    padding-top: 5%;
+    padding-bottom: 5%;
+    padding-left: 5%;
+    padding-right: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    flex-wrap: wrap;
+}
+
 
 /* Input label */
 

@@ -94,10 +94,10 @@ def test_input(var_dict):
                 var in limits
                 and qvar.endswith('from')
                 and get_value(var, qvar)
-                >= get_value(var, qvar.replace('from', 'to'))
+                <= get_value(var, qvar.replace('from', 'to'))
             ):
-                errs.append(sev[1] + errMsg[var] + errMsg['range'])
-                severity.append(1)
+                errs.append(sev[0] + errMsg[var] + errMsg['range'])
+                severity.append(0)
                 
     except ValueError as e:
         raise PreventUpdate from e
