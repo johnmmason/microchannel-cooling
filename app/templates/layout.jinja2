@@ -24,7 +24,8 @@
      });  
   </script>
   <style>
-  @import url('../ttf/Kiona-Regular.ttf');
+  @import url('{{ url_for('static', filename='ttf/Kiona-Regular.ttf') }}');
+  @import url('{{ url_for('static', filename='ttf/AvenirLTStd-Book.otf') }}');
   </style>
   <link rel="stylesheet" href="{{proxy}}{{ url_for('static', filename='css/colors.css') }}" />
   <link rel="stylesheet" href="{{proxy}}{{ url_for('static', filename='css/scroll.css') }}" />

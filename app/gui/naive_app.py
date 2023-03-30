@@ -121,18 +121,8 @@ def make_naive_app(server, prefix):
     )
     def update_warning_div(L, W, D_from, D_to, T_in, T_w, Q):
         # need to follow optimization convention
-        # convert to dict
-        args = {
-            'L': L,
-            'W': W,
-            'D_from': D_from,
-            'D_to': D_to,
-            'T_in': T_in,
-            'T_w': T_w,
-            'Q': Q
-        }
-        errs, block, severity = test_input()
-
+        errs, block, severity = test_input(locals())
+        print(errs)
         if len(errs) > 0:
 
             div_contents = [

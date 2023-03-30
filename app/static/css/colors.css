@@ -43,7 +43,8 @@
     */
     --white-text: var(--aijiro);
     --black-text: var(--kurobeni);
-    --font: 'Kiona-Regular', 'Montserrat-Regular', system-ui;
+    --heading: 'Kiona', system-ui;
+    --font: 'Avenir', system-ui;
     /* may not work on all systems, not sure why */
     --accent-color: var(--benimidori);
     font-family: var(--font);
@@ -61,7 +62,7 @@ h6 {
 h1,
 h2 {
     font-size: 2.5rem;
-    font-family: var(--font);
+    font-family: var(--heading);
     color: var(--black-text);
 }
 
