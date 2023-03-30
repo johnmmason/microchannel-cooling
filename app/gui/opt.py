@@ -106,7 +106,7 @@ def make_naive_app_opt(server, prefix):
                 set_progress((str(i + 1), str(total)))
             return [f"L: {L_optimized}, W: {W_optimized}, D: {D_optimized}"]
         else:
-            return["Optimize"]
+            return["Optimize your Channel:"]
 
     return app.server
 
