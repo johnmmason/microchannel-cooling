@@ -48,9 +48,9 @@ errMsg = {
     'L': 'Length',
     'W': 'Width',
     'D': 'Depth',
-    'temp_inlet': 'Inlet Temperature',
-    'temp_wall': 'Wall Temperature',
-    'flow_rate': 'Flow Rate',
+    'T_in': 'Inlet Temperature',
+    'T_w': 'Wall Temperature',
+    'Q': 'Flow Rate',
     'from': ' (start)',
     'to': ' (end)',
     'range': 'Invalid range',
@@ -72,9 +72,6 @@ def test_input(var_dict):
     errs = []
     severity = []
     
-    def get_value(var, qvar):
-        return limits[var]['type'](var_dict[qvar])
-    
     try:
         # check individual variables
         for qvar in var_dict.keys():
@@ -82,13 +79,13 @@ def test_input(var_dict):
             if var in limits:
                 msg = None
                 try:
-                    val = get_value(var, qvar)
-                except ValueError:
+                    val = limits[var]['type'](var_dict[qvar])
+                except TypeError as e:
                     errs.append(f'{sev[1]}{get_err_msg(var, qvar)} is not a number')
                     severity.append(1)
                 else:                   
-                    if val < limits[var]['min'] or val > limits[var]['max']:
-                        errs.append(f'{sev[0]}{get_err_msg(var, qvar)} is out of range')
+                    if val < limits[var]['min'] or val > limits[var]['max'] or val is None:
+                        errs.append(f'{sev[0]}{get_err_msg(var, qvar)} is not defined, or out of range')
                         severity.append(0)
         # check ranges
         for qvar in var_dict.keys():

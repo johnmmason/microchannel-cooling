@@ -44,7 +44,7 @@
     --white-text: var(--aijiro);
     --black-text: var(--kurobeni);
     --heading: 'Kiona', system-ui;
-    --font: 'Avenir', system-ui;
+    --font: 'AvenirLTStd-Book', system-ui;
     /* may not work on all systems, not sure why */
     --accent-color: var(--benimidori);
     font-family: var(--font);
@@ -57,6 +57,11 @@ h6 {
     font-family: var(--font);
     font-weight: 700;
     color: var(--black-text);
+}
+
+select,
+option {
+    font-family: var(--font);
 }
 
 h1,

@@ -2,7 +2,7 @@ import json
 import numpy as np
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
-from dash import dcc, html, Input, Output, ctx
+from dash import dcc, html, Input, Output, ctx, MATCH
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 from gui.dash_template import new_app
@@ -22,50 +22,50 @@ def make_naive_app(server, prefix):
             html.Div([
                 #html.Div(["Choose a parameter to optimize:",
                 #    dcc.RadioItems([
-                #                 {'label': 'Length', 'value': 'length'},
-                #                 {'label': 'Width', 'value': 'width'},
+                #                 {'label': 'Length', 'value': 'L'},
+                #                 {'label': 'Width', 'value': 'W'},
                 #                 {'label': 'Depth', 'value': 'depth'},
                 #                 {'label': 'No Optimization', 'value': 'no'},
                 #                 ], value = 'no', id = 'opt')],
                 #   ),
-		        html.Div(["Select a Fluid",
-                    dcc.Dropdown(['Water',
-                                  'Ethylene glycol',
-                                  'Silicon dioxide nanofluid',
-                                  'Mineral oil'
-                                  ], value = 'Water', id='fluid')],
-                   ),
-                html.Div(["Length (m):", dcc.Input(id='length', value='0.1', type='text')]),
-                html.Div(["Width (um):", dcc.Input(id='width', value='100', type='text')]),
-                html.Div(["Depth (um):", dcc.Input(id='depth-from', value='10', type='text'),
-                        " to ", dcc.Input(id='depth-to', value='50', type='text')]),
-                html.Div(["Inlet Temperature (C):", dcc.Input(id='temp-inlet', value='20', type='text')]),
-                html.Div(["Wall Temperature (C):", dcc.Input(id='temp-wall', value='100', type='text')]),
-                html.Div(["Flow Rate (uL/min):", dcc.Input(id='flow-rate', value='100', type='text')]),
+                html.Div(id='err'),
                 html.Br(),
-                html.Div(id='err')
-                ], className='input'),
-                html.Div(className='hspace'),
-                html.Div([dcc.Graph(id='plot')], className='plot'),
+		        html.Div(["Select a Fluid",
+                    dbc.Select(['Water',
+                                  'Ethylene Glycol',
+                                  'Silicon Dioxide Nanofluid',
+                                  'Mineral Oil'
+                                  ], value = 'Water', id={'type': 'in', 'name': 'fluid'})],
+                   ),
+                html.Div(["Length (m):", dbc.Input(id={'type': 'in', 'name': 'L'}, value='0.1', type='number')]),
+                html.Div(["Width (um):", dbc.Input(id={'type': 'in', 'name': 'W'}, value='100',  type='number')]),
+                html.Div(["Depth (um):", dbc.Input(id={'type': 'in', 'name': 'D_from'}, value='10', type='number'),
+                                 " to ", dbc.Input(id={'type': 'in', 'name': 'D_to'}, value='50', type='number')]),
+                html.Div(["Inlet Temperature (C):", dbc.Input(id={'type': 'in', 'name': 'T_in'}, value='20', type='number')]),
+                html.Div(["Wall Temperature (C):",  dbc.Input(id={'type': 'in', 'name': 'T_w'}, value='100', type='number')]),
+                html.Div(["Flow Rate (uL/min):",    dbc.Input(id={'type': 'in', 'name': 'Q'}, value='100', type='number')]),
+            ], className='input'),
+            html.Div(className='hspace'),
+            html.Div([dcc.Graph(id='plot')], className='plot'),
         ], className='row'),
     ])
 
     @app.callback(
         Output(component_id='plot', component_property='figure'),
-        Input('fluid','value'),
-        Input('length','value'),
-        Input('width','value'),
-        Input('depth-from','value'),
-        Input('depth-to','value'),
-        Input('temp-inlet','value'),
-        Input('temp-wall','value'),
-        Input('flow-rate', 'value')
+        Input({'type': 'in', 'name': 'fluid'},'value'),
+        Input({'type': 'in', 'name': 'L'},'value'),
+        Input({'type': 'in', 'name': 'W'},'value'),
+        Input({'type': 'in', 'name': 'D_from'},'value'),
+        Input({'type': 'in', 'name': 'D_to'},'value'),
+        Input({'type': 'in', 'name': 'T_in'},'value'),
+        Input({'type': 'in', 'name': 'T_w'},'value'),
+        Input({'type': 'in', 'name': 'Q'}, 'value')
     )
-    def update_output_div(fluid, length, width, depth_from, depth_to, temp_inlet, temp_wall, flow_rate):
+    def update_output_div(fluid, L, W, depth_from, depth_to, temp_inlet, temp_wall, flow_rate):
 
         try:
-            L = float(length) # length of microchannel [m]
-            W = float(width) * 1e-6 # width of microchannel [m]
+            L = float(L) # L of microchannel [m]
+            W = float(W) * 1e-6 # W of microchannel [m]
 
             if fluid == 'Water':
                 F = water
@@ -78,7 +78,7 @@ def make_naive_app(server, prefix):
             else:
                 F = water
             
-            T_in = float(temp_inlet)  + 273 # temperature of inlet [K]
+            T_in = float(temp_inlet) + 273 # temperature of inlet [K]
             T_w = float(temp_wall) + 273 # temperature of wall [K]
             Q = float(flow_rate) # flow rate [uL/min]m]
 
@@ -108,18 +108,32 @@ def make_naive_app(server, prefix):
         update_style(fig)
             
         return fig
+    
+    @app.callback(
+        Output({'type': 'in', 'name': MATCH},'valid'),
+        Output({'type': 'in', 'name': MATCH}, 'invalid'),
+        Input( {'type': 'in', 'name': MATCH},'value'),
+        Input( {'type': 'in', 'name': MATCH},'id')
+    )
+    def check_validity(value, cid):
+        # print(cid)
+        items = {cid['name']: value}
+        err,block,severity = test_input(items)
+        a = (len(err) == 0)
+        return (a, block) #
 
     @app.callback(
         Output('err', 'children'),
-        Input('length','value'),
-        Input('width','value'),
-        Input('depth-from','value'),
-        Input('depth-to','value'),
-        Input('temp-inlet','value'),
-        Input('temp-wall','value'),
-        Input('flow-rate', 'value')
+        Input({'type': 'in', 'name': 'fluid'},'value'),
+        Input({'type': 'in', 'name': 'L'},'value'),
+        Input({'type': 'in', 'name': 'W'},'value'),
+        Input({'type': 'in', 'name': 'D_from'},'value'),
+        Input({'type': 'in', 'name': 'D_to'},'value'),
+        Input({'type': 'in', 'name': 'T_in'},'value'),
+        Input({'type': 'in', 'name': 'T_w'},'value'),
+        Input({'type': 'in', 'name': 'Q'}, 'value')
     )
-    def update_warning_div(L, W, D_from, D_to, T_in, T_w, Q):
+    def update_warning_div(fluid, L, W, D_from, D_to, T_in, T_w, Q):
         # need to follow optimization convention
         errs, block, severity = test_input(locals())
         print(errs)
