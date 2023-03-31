@@ -1,17 +1,4 @@
-limits = {
-    
-        #     L (float): Channel length [m]
-        # W (float): Channel width [m]
-        # D (float): Channel depth [m]
-        # rho (float): Fluid density [kg/m^3]
-        # mu (float): Fluid dynamic viscosity [Pa*s]
-        # cp (float): Fluid specific heat capacity [J/(kg*K)]
-        # k (float): Fluid thermal conductivity [W/(m*K)]
-        # T_in (float): Fluid inlet temperature [K]
-        # T_w (float): Fluid wall temperature [K]
-        # Q (float): Fluid flow rate [uL/min]
-        
-        
+limits = {       
     'L': {
         'min': 0,
         'max': 0.1,

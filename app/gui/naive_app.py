@@ -30,24 +30,25 @@ def make_naive_app(server, prefix):
                 #   ),
                 html.Div(id='err'),
                 html.Br(),
-		        html.Div(["Select a Fluid",
+		        html.Div(["Fluid:",
                     dbc.Select(['Water',
                                   'Ethylene Glycol',
                                   'Silicon Dioxide Nanofluid',
                                   'Mineral Oil'
                                   ], value = 'Water', id={'type': 'in', 'name': 'fluid'})],
-                   ),
-                html.Div(["Length (m):", dbc.Input(id={'type': 'in', 'name': 'L'}, value='0.1', type='number')]),
-                html.Div(["Width (um):", dbc.Input(id={'type': 'in', 'name': 'W'}, value='100',  type='number')]),
-                html.Div(["Depth (um):", dbc.Input(id={'type': 'in', 'name': 'D_from'}, value='10', type='number'),
-                                 " to ", dbc.Input(id={'type': 'in', 'name': 'D_to'}, value='50', type='number')]),
-                html.Div(["Inlet Temperature (C):", dbc.Input(id={'type': 'in', 'name': 'T_in'}, value='20', type='number')]),
-                html.Div(["Wall Temperature (C):",  dbc.Input(id={'type': 'in', 'name': 'T_w'}, value='100', type='number')]),
-                html.Div(["Flow Rate (uL/min):",    dbc.Input(id={'type': 'in', 'name': 'Q'}, value='100', type='number')]),
+                   className='input-box'),
+                html.Div(["Length (m):", dbc.Input(id={'type': 'in', 'name': 'L'}, value='0.1', type='number')], className='input-box'),
+                html.Div(["Width (um):", dbc.Input(id={'type': 'in', 'name': 'W'}, value='100',  type='number')], className='input-box'),
+                html.Div(["Depth (um) (start):", dbc.Input(id={'type': 'in', 'name': 'D_from'}, value='10', type='number')], className='input-box'),
+                html.Div(["Depth (um) (end):",   dbc.Input(id={'type': 'in', 'name': 'D_to'}, value='50', type='number')], className='input-box'),
+                html.Div(["Inlet Temperature (C):", dbc.Input(id={'type': 'in', 'name': 'T_in'}, value='20', type='number')], className='input-box'),
+                html.Div(["Wall Temperature (C):",  dbc.Input(id={'type': 'in', 'name': 'T_w'}, value='100', type='number')], className='input-box'),
+                html.Div(["Flow Rate (uL/min):",    dbc.Input(id={'type': 'in', 'name': 'Q'}, value='100', type='number')], className='input-box'),
             ], className='input'),
             html.Div(className='hspace'),
             html.Div([dcc.Graph(id='plot')], className='plot'),
         ], className='row'),
+        html.Div(id='cancel_button_id', style={'display': 'none'}), # workaround for dash errors.
     ])
 
     @app.callback(
@@ -108,20 +109,6 @@ def make_naive_app(server, prefix):
         update_style(fig)
             
         return fig
-    
-    @app.callback(
-        Output({'type': 'in', 'name': MATCH},'valid'),
-        Output({'type': 'in', 'name': MATCH}, 'invalid'),
-        Input( {'type': 'in', 'name': MATCH},'value'),
-        Input( {'type': 'in', 'name': MATCH},'id'),
-        prevent_initial_call=True # seems to need this
-    )
-    def check_validity(value, cid):
-        # print(cid)
-        items = {cid['name']: value}
-        err,block,severity = test_input(items)
-        a = (len(err) == 0)
-        return (a, block) #
 
     @app.callback(
         Output('err', 'children'),
@@ -152,5 +139,17 @@ def make_naive_app(server, prefix):
             return html.Div(div_contents)
                             
         else : return ""
+        
+    @app.callback(
+        Output({'type': 'in', 'name': MATCH},'valid'),
+        Output({'type': 'in', 'name': MATCH}, 'invalid'),
+        Output({'type': 'in', 'name': MATCH}, 'value'),
+        Input( {'type': 'in', 'name': MATCH},'value'),
+        Input( {'type': 'in', 'name': MATCH},'id')
+    )
+    def check_validity(value, cid):
+        err,block,severity = test_input({cid['name']: value})
+        a = (len(err) == 0)
+        return (a, block, value) #
     
     return app.server
