@@ -28,24 +28,27 @@ def make_naive_app_opt(server, prefix):
         html.Div([
             html.Div([
 
-                # Shruthi make checkboxes instead of radio buttons
+                # checkboxes
                 html.Div(["Choose a parameter to optimize:",
-                    dcc.RadioItems([
-                                 {'label': 'Length', 'value': 'length'},
-                                 {'label': 'Width', 'value': 'width'},
-                                 {'label': 'Depth', 'value': 'depth'},
-                                 {'label': 'No Optimization', 'value': 'no'},
-                                 ], value = 'no', id = 'opt')],
-                   ),
+                    dcc.Checklist(
+                       options=[
+                           {'label': 'Length', 'value': 'L'},
+                           {'label': 'Width', 'value': 'W'},
+                           {'label': 'Depth', 'value': 'D'},
+                       ],
+                       value=['D'], id ='par')]),
                 # I think this is important for user to choose
 		        html.Div(["Select a Fluid",
-                    dcc.Dropdown(['Water',
-                                  'Ethylene glycol',
-                                  'Silicon dioxide nanofluid',
-                                  'Mineral oil'
-                                  ], value = 'Water', id='fluid')],
+                    dcc.Dropdown(
+                        options=[
+                            {'label': 'Water', 'value': 'water'},
+                            {'label': 'Ethylene glycol', 'value': 'ethylene_glycol'},
+                            {'label': 'Silicon dioxide nanofluid', 'value': 'silicon_dioxide_nanofluid'},
+                            {'label': 'Mineral oil', 'value': 'mineral_oil'},
+                        ],
+                       value = 'Water', id='fluid')],
                    ),
-                # Cassandre make textboxes for initial input and then maximum iterations/ tolerance for 
+                # Cassandre needs to make textboxes for initial input and then maximum iterations/ tolerance for 
                 html.Div([
                 html.P(id="paragraph_id", children=["Run Optimization"]),
                 html.Progress(id="progress_bar"),
@@ -59,7 +62,11 @@ def make_naive_app_opt(server, prefix):
 
     @app.long_callback(
         output=Output("paragraph_id", "children"),
-        inputs=Input("button_id", "n_clicks"),
+        inputs=[
+            (Input('button_id', 'n_clicks')),
+            (Input('par','value')),
+            (Input('fluid','value')),
+        ],
         running=[
             (Output("button_id", "disabled"), True, False),
             (Output("cancel_button_id", "disabled"), False, True),
@@ -78,7 +85,9 @@ def make_naive_app_opt(server, prefix):
         progress=[Output("progress_bar", "value"), Output("progress_bar", "max")],
     )
 
-    def callback(set_progress, n_clicks):
+
+
+    def callback(set_progress, n_clicks, fluid, par):
         if n_clicks > 0:
             L = 0.1 # length of microchannel [m]
             W = 100e-6 # width of microchannel [m]
@@ -89,6 +98,16 @@ def make_naive_app_opt(server, prefix):
 
             Q = 100 # flow rate [uL/min]
 
+            if fluid == 'Water':
+                F = water
+            elif fluid == 'Ethylene glycol':
+                F = ethylene_glycol
+            elif fluid == 'Silicon dioxide nanofluid':
+                F = silicon_dioxide_nanofluid
+            elif fluid == 'Mineral oil':
+                F = mineral_oil
+            else:
+                F = water
     
             # q_list = []
             # dP_list = []
@@ -97,13 +116,13 @@ def make_naive_app_opt(server, prefix):
             total = len(D)
             for D_scalar in D:
                 geom = Geometry(L, W, D_scalar)
-                i+1
-                cooler = SGD_MicroChannelCooler(geom, ethylene_glycol, T_in, T_w, 100)
-                L_optimized, W_optimized, D_optimized = cooler.solve_sgd(parameter_choice = [], optimize_type='default')
+                cooler = SGD_MicroChannelCooler(geom, F, T_in, T_w, 100)
+                L_optimized, W_optimized, D_optimized = cooler.solve_sgd(parameter_choice = par, optimize_type='default')
                 # q_list.append(q)
                 # dP_list.append(dP)
-                # T_out_list.append(T_out)    
+                # T_out_list.append(T_out)
                 set_progress((str(i + 1), str(total)))
+                i=i+1
             return [f"L: {L_optimized}, W: {W_optimized}, D: {D_optimized}"]
         else:
             return["Optimize your Channel:"]
