@@ -19,11 +19,10 @@ def make_naive_app_opt(server, prefix):
         html.Div([
             html.Div([
                 html.Div(["Choose a parameter to optimize:",
-                    dcc.RadioItems([
+                    dcc.Checklist([
                                  {'label': 'Length', 'value': 'length'},
                                  {'label': 'Width', 'value': 'width'},
                                  {'label': 'Depth', 'value': 'depth'},
-                                 {'label': 'No Optimization', 'value': 'no'},
                                  ], value = 'no', id = 'opt')],
                    ),
 		        html.Div(["Select a Fluid",
