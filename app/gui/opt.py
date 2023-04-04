@@ -108,9 +108,4 @@ def make_naive_app_opt(server, prefix):
             return["Optimize"]
 
     return app.server
-<<<<<<< HEAD
-
-    return app.server
-=======
  
->>>>>>> 6862ec7222d7e9e2b4bcfb3cfa68f23696f78b3e
