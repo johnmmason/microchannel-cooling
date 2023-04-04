@@ -25,7 +25,7 @@ def naive_model(L, W, D, rho, mu, cp, k, T_in, T_w, Q):
     f = 64/Re
     dP = ( f * L * rho * (v**2) ) / ( 2 * D ) # pressure loss [Pa]
 
-    T_out = T_in + q / (rho * Q * 1.67e-4 * cp) # outlet temperature [K]
+    T_out = T_in + q / (rho * Q * 1.67e-8 * cp) # outlet temperature [K]
 
     return q, dP, T_out
 

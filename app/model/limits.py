@@ -1,3 +1,6 @@
+from dash.exceptions import PreventUpdate
+import torch
+
 limits = {       
     'L': {
         'min': 0,
@@ -80,8 +83,7 @@ def test_input(var_dict):
             if (
                 var in limits
                 and qvar.endswith('from')
-                and get_value(var, qvar)
-                <= get_value(var, qvar.replace('from', 'to'))
+                and var_dict[qvar] >= var_dict[qvar.replace('from', 'to')]
             ):
                 errs.append(sev[0] + errMsg[var] + errMsg['range'])
                 severity.append(0)
@@ -91,11 +93,12 @@ def test_input(var_dict):
     block = any(severity)
     return errs, block, severity
 
-def clamp_variables(opt,parameter_choice):
-    for var in opt.__dict__:
+
+def clamp_variables(opt,old_opt,parameter_choice):
+    for var in opt:
         if var in limits:
             if var in parameter_choice:
-                opt.__dict__[var] = torch.clamp(opt.__dict__[var], min=limits[var]['min'], max=limits[var]['max'])
-                opt.__dict__[var] = opt.__dict__[var].detach()
+                opt[var] = torch.clamp(opt[var], min=limits[var]['min'], max=limits[var]['max'])
+                opt[var] = opt[var].detach()
             else:
-                opt.__dict__[var] = opt.__dict__[f'{var}_old']
+                opt[var] = old_opt[var]
