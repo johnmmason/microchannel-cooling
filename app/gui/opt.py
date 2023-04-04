@@ -30,11 +30,10 @@ def make_naive_app_opt(server, prefix):
 
                 # Shruthi make checkboxes instead of radio buttons
                 html.Div(["Choose a parameter to optimize:",
-                    dcc.RadioItems([
+                    dcc.Checklist([
                                  {'label': 'Length', 'value': 'length'},
                                  {'label': 'Width', 'value': 'width'},
                                  {'label': 'Depth', 'value': 'depth'},
-                                 {'label': 'No Optimization', 'value': 'no'},
                                  ], value = 'no', id = 'opt')],
                    ),
                 # I think this is important for user to choose
@@ -109,5 +108,9 @@ def make_naive_app_opt(server, prefix):
             return["Optimize"]
 
     return app.server
+<<<<<<< HEAD
 
     return app.server
+=======
+ 
+>>>>>>> 6862ec7222d7e9e2b4bcfb3cfa68f23696f78b3e

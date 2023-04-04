@@ -79,8 +79,8 @@ def make_naive_app(server, prefix):
             else:
                 F = water
             
-            T_in = float(temp_inlet) + 273 # temperature of inlet [K]
-            T_w = float(temp_wall) + 273 # temperature of wall [K]
+            T_in = float(temp_inlet) + 273.15 # temperature of inlet [K]
+            T_w = float(temp_wall) + 273.15 # temperature of wall [K]
             Q = float(flow_rate) # flow rate [uL/min]m]
 
             D_low = float(depth_from)
@@ -95,15 +95,18 @@ def make_naive_app(server, prefix):
         cooler = MicroChannelCooler(geom, F, T_in, T_w, Q)
         q, dP, T_out = cooler.solve()
 
-        fig = make_subplots(rows=1, cols=2, column_widths=[.5, .5])
+        fig = make_subplots(rows=1, cols=3, column_widths=[.33, .33, .33])
 
         fig.add_trace(row=1, col=1, trace=go.Scatter(x=D, y=q*1e-4))
         fig.add_trace(row=1, col=2, trace=go.Scatter(x=D, y=dP*0.000145038))
+        fig.add_trace(row=1, col=3, trace=go.Scatter(x=D, y=T_out-273.15))
 
         fig.update_xaxes(title_text="Channel Depth (m)", row=1, col=1)
         fig.update_xaxes(title_text="Channel Depth (m)", row=1, col=2)
+        fig.update_xaxes(title_text="Channel Depth (m)", row=1, col=3)
         fig.update_yaxes(title_text="Heat Flux (W/cm2)", row=1, col=1)
         fig.update_yaxes(title_text="Backpressure (psi)", row=1, col=2)
+        fig.update_yaxes(title_text="Outlet Temperature (C)", row=1, col=3)
 
         fig.update_layout(height=600, showlegend=False)
         update_style(fig)
