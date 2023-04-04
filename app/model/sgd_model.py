@@ -91,7 +91,7 @@ def sgd_model(L, W, D, rho, mu, cp, k, T_in, T_w, Q, parameter_choice, optimize_
           # Outlet temperature T_out. Minimize the temperature difference between the outlet and inlet temperatures, as to minimize the temperature rise in the fluid. Thus, the objective is defined as (T_out - T_in) ** 2 to penalize large temperature differences
         
         if optimize_type == 'default':
-            objective = dP_torch - q_torch - 1e25*(L ** 2) 
+            objective = dP_torch - q_torch
             # print(objective.item())
         elif optimize_type == 'q':
             objective = -q_torch     # Email Tejawsi about manufacturing constraints s.t. we'll have ranges to clamp on.
@@ -180,13 +180,16 @@ if __name__ == '__main__':
     for D_scalar in D:
         geom = Geometry(L, W, D_scalar)
         cooler = SGD_MicroChannelCooler(geom, ethylene_glycol, T_in, T_w, 100)
-        L_optimized, W_optimized, D_optimized = cooler.solve_sgd(parameter_choice = [], optimize_type='default')
+        L_optimized, W_optimized, D_optimized = cooler.solve_sgd(parameter_choice = ['L', 'W'], optimize_type='default')
         # q_list.append(q)
         # dP_list.append(dP)
         # T_out_list.append(T_out)
+        print("Optimized L, W, D.")
+        print("L: ", L_optimized, " W: ", W_optimized, " D: ", D_optimized)
 
-    print("Optimized L, W, D.")
-    print("L: ", L_optimized, " W: ", W_optimized, " D: ", D_optimized)
+
+    # print("Optimized L, W, D.")
+    # print("L: ", L_optimized, " W: ", W_optimized, " D: ", D_optimized)
 
     # q = np.array(q_list)
     # dP = np.array(dP_list)
