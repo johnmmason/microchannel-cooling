@@ -8,7 +8,7 @@ from dash.exceptions import PreventUpdate
 from gui.dash_template import new_app
 from model.naive_model import MicroChannelCooler, Geometry
 from model.fluids import water, ethylene_glycol, silicon_dioxide_nanofluid, mineral_oil
-from model.limits import test_input
+from model.limits import test_input, test_single_input
 from config import update_style
 def make_naive_app(server, prefix):
 
@@ -115,18 +115,20 @@ def make_naive_app(server, prefix):
 
     @app.callback(
         Output('err', 'children'),
-        Input({'type': 'in', 'name': 'fluid'},'value'),
-        Input({'type': 'in', 'name': 'L'},'value'),
-        Input({'type': 'in', 'name': 'W'},'value'),
-        Input({'type': 'in', 'name': 'D_from'},'value'),
-        Input({'type': 'in', 'name': 'D_to'},'value'),
-        Input({'type': 'in', 'name': 'T_in'},'value'),
-        Input({'type': 'in', 'name': 'T_w'},'value'),
-        Input({'type': 'in', 'name': 'Q'}, 'value')
+        inputs = dict(
+            fluid = Input({'type': 'in', 'name': 'fluid'},'value'),
+            L = Input({'type': 'in', 'name': 'L'},'value'),
+            W = Input({'type': 'in', 'name': 'W'},'value'),
+            D_from =Input({'type': 'in', 'name': 'D_from'},'value'),
+            D_to = Input({'type': 'in', 'name': 'D_to'},'value'),
+            T_in = Input({'type': 'in', 'name': 'T_in'},'value'),
+            T_w = Input({'type': 'in', 'name': 'T_w'},'value'),
+            Q = Input({'type': 'in', 'name': 'Q'}, 'value')
+        )
     )
-    def update_warning_div(fluid, L, W, D_from, D_to, T_in, T_w, Q):
+    def update_warning_div(**kwargs):
         # need to follow optimization convention
-        errs, block, severity = test_input(locals())
+        errs, block, severity = test_input(kwargs)
         print(errs)
         if len(errs) > 0:
 
@@ -151,7 +153,7 @@ def make_naive_app(server, prefix):
         Input( {'type': 'in', 'name': MATCH},'id')
     )
     def check_validity(value, cid):
-        err,block,severity = test_input({cid['name']: value})
+        err,block,severity = test_single_input(cid['name'], value)
         a = (len(err) == 0)
         return (a, block, value) #
     

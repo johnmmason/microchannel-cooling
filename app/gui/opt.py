@@ -96,13 +96,13 @@ def make_naive_app_opt(server, prefix):
             total = len(D)
             for D_scalar in D:
                 geom = Geometry(L, W, D_scalar)
-                i+1
                 cooler = SGD_MicroChannelCooler(geom, ethylene_glycol, T_in, T_w, 100)
                 L_optimized, W_optimized, D_optimized = cooler.solve_sgd(parameter_choice = [], optimize_type='default')
                 # q_list.append(q)
                 # dP_list.append(dP)
                 # T_out_list.append(T_out)    
                 set_progress((str(i + 1), str(total)))
+                i+=1
             return [f"L: {L_optimized}, W: {W_optimized}, D: {D_optimized}"]
         else:
             return["Optimize"]

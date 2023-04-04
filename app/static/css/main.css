@@ -110,11 +110,11 @@ h1 {
 
 .hspace {
     content: "";
-    width: 8%;
+    width: 4%;
 }
 
 .plot {
-    width: 62%;
+    width: 70%;
     min-width: 700px;
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);
