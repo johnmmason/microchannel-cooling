@@ -298,6 +298,7 @@ select,
 textarea {
     text-align: right;
     text-align: -webkit-right;
+    direction: rtl;
     padding-right: calc(2em + 0.375rem);
     margin-left: calc(-0.5em - 0.1875rem);
     z-index: -1;
@@ -308,14 +309,38 @@ textarea {
 }
 
 select {
-    padding-right: 0.5em!important;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 2.5em!important;
     width: 118%;
 }
 
 select option {
     text-align: right;
     text-align: -webkit-right;
+    direction: rtl;
     background-color: transparent;
+}
+
+select {
+    background-image: linear-gradient(60deg, transparent 50%, var(--rurikon) 50%), linear-gradient(120deg, var(--rurikon) 50%, transparent 50%);
+    background-position: calc(100% - 20px) calc(1em - 1px), calc(100% - 15px) calc(1em - 1px), calc(100% - 2.5em) 0.1em;
+    background-size: 5px 5px, 5px 5px, 1px 1.5em;
+    background-repeat: no-repeat;
+}
+
+select:focus {
+    background-image: linear-gradient(60deg, var(--gunjo-iro) 50%, transparent 50%), linear-gradient(120deg, transparent 50%, var(--gunjo-iro) 50%);
+    background-position: calc(100% - 15px) calc(1em - 1px), calc(100% - 20px) calc(1em - 1px), calc(100% - 2.5em) 0.1em;
+    background-size: 5px 5px, 5px 5px, 1px 1.5em;
+    background-repeat: no-repeat;
+    border-color: green;
+    outline: 0;
+}
+
+select:-moz-focusring {
+    color: transparent;
+    text-shadow: 0 0 0 #000;
 }
 
 input:not([type='checkbox']):focus,
@@ -369,75 +394,4 @@ textarea::before {
     height: 1em;
     background: var(--karakurenai);
     z-index: 20;
-}
-
-
-/* Variation of work by @mrhyddenn for Radios */
-
-.check {
-    cursor: pointer;
-    position: relative;
-    margin: auto;
-    width: 18px;
-    height: 18px;
-    -webkit-tap-highlight-color: transparent;
-    transform: translate3d(0, 0, 0);
-}
-
-.check:before {
-    content: "";
-    position: absolute;
-    top: -15px;
-    left: -15px;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: rgba(34, 50, 84, 0.03);
-    opacity: 0;
-    transition: opacity 0.2s ease;
-}
-
-.check svg {
-    position: relative;
-    z-index: 1;
-    fill: none;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    stroke: #c8ccd4;
-    stroke-width: 1.5;
-    transform: translate3d(0, 0, 0);
-    transition: all 0.2s ease;
-}
-
-.check svg path {
-    stroke-dasharray: 60;
-    stroke-dashoffset: 0;
-}
-
-.check svg polyline {
-    stroke-dasharray: 22;
-    stroke-dashoffset: 66;
-}
-
-.check:hover:before {
-    opacity: 1;
-}
-
-.check:hover svg {
-    stroke: var(--accent-color, #a3e583);
-}
-
-#cbx2:checked+.check svg {
-    stroke: var(--accent-color, #a3e583);
-}
-
-#cbx2:checked+.check svg path {
-    stroke-dashoffset: 60;
-    transition: all 0.3s linear;
-}
-
-#cbx2:checked+.check svg polyline {
-    stroke-dashoffset: 42;
-    transition: all 0.2s linear;
-    transition-delay: 0.15s;
 }

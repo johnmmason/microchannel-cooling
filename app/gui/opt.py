@@ -41,7 +41,9 @@ def make_naive_app_opt(server, prefix):
                     # Cassandre needs to make textboxes for initial input and then maximum iterations/ tolerance for 
                     html.Br(),
                     html.Div([
-                        html.P(id="paragraph_id", children=["Run Optimization"]),
+                        html.P(id="paragraph_id", children=[
+                            html.H4("Run Optimization"),
+                            ]),
                         html.Progress(id="progress_bar"),
                     ]),
                     html.Br(),
