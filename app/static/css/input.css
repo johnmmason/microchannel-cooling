@@ -323,6 +323,7 @@ select:focus,
 textarea:focus {
     text-align: left;
     text-align: -webkit-left;
+    direction: ltr;
     z-index: 0;
     position: relative;
     top: 10px;
