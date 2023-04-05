@@ -1,16 +1,10 @@
-import numpy as np
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
 from dash import dcc, html, Input, Output
-import diskcache
 import dash_bootstrap_components as dbc
-from dash.exceptions import PreventUpdate
-from gui.dash_template import new_app, new_app_opt
-from model.naive_model import MicroChannelCooler, Geometry
-from model.fluids import water, ethylene_glycol, silicon_dioxide_nanofluid, mineral_oil
+import diskcache
+from gui.dash_template import new_app_opt
+from model.naive_model import Geometry
+from model.fluids import fluids, fluidoptions
 from dash.long_callback import DiskcacheLongCallbackManager
-from config import update_style
-from model.sgd_model import sgd_model
 from model.sgd_model import SGD_MicroChannelCooler
 import time
 
@@ -28,37 +22,38 @@ def make_naive_app_opt(server, prefix):
         html.Div([
             html.Div([
 
-                # Shruthi make checkboxes instead of radio buttons
+                # checkboxes
                 html.Div(["Choose a parameter to optimize:",
-                    dcc.Checklist([
-                                 {'label': 'Length', 'value': 'length'},
-                                 {'label': 'Width', 'value': 'width'},
-                                 {'label': 'Depth', 'value': 'depth'},
-                                 ], value = 'no', id = 'opt')],
-                   ),
-                # I think this is important for user to choose
-		        html.Div(["Select a Fluid",
-                    dcc.Dropdown(['Water',
-                                  'Ethylene glycol',
-                                  'Silicon dioxide nanofluid',
-                                  'Mineral oil'
-                                  ], value = 'Water', id='fluid')],
-                   ),
-                # Cassandre make textboxes for initial input and then maximum iterations/ tolerance for 
-                html.Div([
-                html.P(id="paragraph_id", children=["Run Optimization"]),
-                html.Progress(id="progress_bar"),
-                ]),
-                html.Button(id="button_id", children="Run", n_clicks=0),
-                html.Button(id="cancel_button_id", children="Cancel Running Job"),
-        ])
+                    dcc.Checklist(
+                       options=[
+                           {'label': 'Length', 'value': 'L'},
+                           {'label': 'Width', 'value': 'W'},
+                           {'label': 'Depth', 'value': 'D'},
+                       ],
+                       value=['D'], id ='par', className='input-box')]),
+                    # I think this is important for user to choose
+                    html.Div(["Fluid:",
+                        dbc.Select(fluidoptions, value = 0, id='fluid')],
+                    className='input-box'),
+                    # Cassandre needs to make textboxes for initial input and then maximum iterations/ tolerance for 
+                    html.Div([
+                        html.P(id="paragraph_id", children=["Run Optimization"]),
+                        html.Progress(id="progress_bar"),
+                    ]),
+                    html.Button(id="button_id", children="Run", n_clicks=0),
+                    html.Button(id="cancel_button_id", children="Cancel Running Job"),
+                ])
 
-        ], className='row'),		
-    ])
+            ], className='input'),		
+        ])
 
     @app.long_callback(
         output=Output("paragraph_id", "children"),
-        inputs=Input("button_id", "n_clicks"),
+        inputs=[
+            Input('button_id', 'n_clicks'),
+            Input('par','value'),
+            Input('fluid','value'),
+        ],
         running=[
             (Output("button_id", "disabled"), True, False),
             (Output("cancel_button_id", "disabled"), False, True),
@@ -75,37 +70,34 @@ def make_naive_app_opt(server, prefix):
         ],
         cancel=[Input("cancel_button_id", "n_clicks")],
         progress=[Output("progress_bar", "value"), Output("progress_bar", "max")],
+        prevent_initial_call=True,
     )
 
-    def callback(set_progress, n_clicks):
+
+
+    def callback(set_progress, n_clicks, par, fluid):
         if n_clicks > 0:
             L = 0.1 # length of microchannel [m]
             W = 100e-6 # width of microchannel [m]
-            D = np.arange(10, 50, 1) * 1e-6 # depth of microchannel [m]
+            D = 50 * 1e-6 # depth of microchannel [m]
 
-            T_in = 20 + 273 # inlet temperature [K]
-            T_w = 100 + 273 # inlet temperature [K]
+            T_in = 20 + 273.15 # inlet temperature [K]
+            T_w = 100 + 273.15 # inlet temperature [K]
 
             Q = 100 # flow rate [uL/min]
-
+            
+            try: 
+                F = fluids[fluid]
+            except Exception as e:
+                F = fluids[0]
     
-            # q_list = []
-            # dP_list = []
-            # T_out_list = []
-            i = 1
-            total = len(D)
-            for D_scalar in D:
-                geom = Geometry(L, W, D_scalar)
-                cooler = SGD_MicroChannelCooler(geom, ethylene_glycol, T_in, T_w, 100)
-                L_optimized, W_optimized, D_optimized = cooler.solve_sgd(parameter_choice = [], optimize_type='default')
-                # q_list.append(q)
-                # dP_list.append(dP)
-                # T_out_list.append(T_out)    
-                set_progress((str(i + 1), str(total)))
-                i+=1
-            return [f"L: {L_optimized}, W: {W_optimized}, D: {D_optimized}"]
+            geom = Geometry(L, W, D)
+            cooler = SGD_MicroChannelCooler(geom, F, T_in, T_w, Q)
+            L_optimized, W_optimized, D_optimized = cooler.solve_sgd(parameter_choice = par, optimize_type='default', progress=set_progress, num_iterations=5000)
+
+            return [f"L:\t{L_optimized},\nW:\t{W_optimized},\nD:\t{D_optimized}"]
         else:
-            return["Optimize"]
+            return["Optimize Channel Parameters:"]
 
     return app.server
- 
+

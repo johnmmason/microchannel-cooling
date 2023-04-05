@@ -17,7 +17,7 @@ def make_variables(in_vars,opt_names):
         var_dict[name] = Variable(torch.tensor(in_vars[name], dtype=torch.float32), requires_grad=True)
     return var_dict, old_var_dict
 
-def sgd_model(parameter_choice, optimize_type, **default):
+def sgd_model(parameter_choice, optimize_type, progress, learning_rate, num_iterations, **default):
     """
     Optimization using stochastic gradient-based optimization with PyTorch.
 
@@ -47,11 +47,8 @@ def sgd_model(parameter_choice, optimize_type, **default):
     # Step 1: Create PyTorch Variables for the input parameters
     opt_names = ["L", "W", "D"]
     var_dict, old_var_dict = make_variables(default,opt_names)
-    
-    # Step 2: Set the optimization hyperparameters
-    learning_rate = 1e-5
-    num_iterations = 100
 
+    # Step 2: Set the optimization hyperparameters
     # Step 3: Initialize the optimizer
     optimizer = torch.optim.SGD(var_dict.values(), lr=learning_rate)
 
@@ -75,12 +72,6 @@ def sgd_model(parameter_choice, optimize_type, **default):
         default.update(var_dict)
         q_torch,dP_torch, T_out = naive_model(**default)
 
-        # Calculate objective
-          # Default. Minimizing the pressure drop and maximizing the heat flux.
-          # Heat flux q. Minimize the negative of the heat flux q. 
-          # Pressure drop dP. Minimize pressure drop dP. 
-          # Outlet temperature T_out. Minimize the temperature difference between the outlet and inlet temperatures, as to minimize the temperature rise in the fluid. Thus, the objective is defined as (T_out - T_in) ** 2 to penalize large temperature differences
-        
         if optimize_type == 'default':
             objective = dP_torch - q_torch
             # print(objective.item())
@@ -93,7 +84,7 @@ def sgd_model(parameter_choice, optimize_type, **default):
         else:
             raise ValueError("Invalid optimize_type, must be 'q', 'dP', or 'T_out'")
 
-        
+
 
         # Compute the gradients
         objective.backward()
@@ -103,6 +94,15 @@ def sgd_model(parameter_choice, optimize_type, **default):
 
         # Clamp L
         clamp_variables(var_dict, old_var_dict, parameter_choice)
+
+        # update progress bar
+        if progress:
+            progress(
+                [
+                    str(i),
+                    str(num_iterations),
+                ]
+            )
 
     # Step 5: Post-process results
     for var in var_dict.keys():
@@ -114,7 +114,7 @@ def sgd_model(parameter_choice, optimize_type, **default):
 
 class SGD_MicroChannelCooler(MicroChannelCooler):
 
-    def solve_sgd(self, parameter_choice, optimize_type='default'):
+    def solve_sgd(self, parameter_choice, optimize_type='default', progress=None, learning_rate = 1e-5, num_iterations = 100):
         '''
         Returns the optimized length, width, and depth using the gradient descent method w/ PyTorc
 
@@ -130,7 +130,7 @@ class SGD_MicroChannelCooler(MicroChannelCooler):
         params = {'L': self.geometry.L, 'W': self.geometry.W, 'D': self.geometry.D,
                   'rho': self.fluid.rho, 'mu': self.fluid.mu, 'cp': self.fluid.cp, 'k': self.fluid.k,
                   'T_in': self.T_in, 'T_w': self.T_w, 'Q': self.Q,}
-        L, W, D = sgd_model(parameter_choice, optimize_type, **params)
+        L, W, D = sgd_model(parameter_choice, optimize_type, progress, learning_rate, num_iterations, **params)
 
         return L, W, D
     
@@ -153,16 +153,12 @@ if __name__ == '__main__':
 
     geom = Geometry(L, W, D)
     cooler = SGD_MicroChannelCooler(geom, ethylene_glycol, T_in, T_w, 100)
-    L_optimized, W_optimized, D_optimized = cooler.solve_sgd(parameter_choice = ['L','W'], optimize_type='default')
+    L_optimized, W_optimized, D_optimized = cooler.solve_sgd(parameter_choice = ['L','W'], optimize_type='default', progress=None)
     # q_list.append(q)
         # dP_list.append(dP)
         # T_out_list.append(T_out)
     print("Optimized L, W, D.")
     print("L: ", L_optimized, " W: ", W_optimized, " D: ", D_optimized)
-
-
-    # print("Optimized L, W, D.")
-    # print("L: ", L_optimized, " W: ", W_optimized, " D: ", D_optimized)
 
     # q = np.array(q_list)
     # dP = np.array(dP_list)

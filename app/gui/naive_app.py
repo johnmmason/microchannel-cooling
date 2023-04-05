@@ -7,7 +7,7 @@ import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 from gui.dash_template import new_app
 from model.naive_model import MicroChannelCooler, Geometry
-from model.fluids import water, ethylene_glycol, silicon_dioxide_nanofluid, mineral_oil
+from model.fluids import fluids, fluidoptions
 from model.limits import test_input, test_single_input
 from config import update_style
 def make_naive_app(server, prefix):
@@ -31,11 +31,7 @@ def make_naive_app(server, prefix):
                 html.Div(id='err'),
                 html.Br(),
 		        html.Div(["Fluid:",
-                    dbc.Select(['Water',
-                                  'Ethylene Glycol',
-                                  'Silicon Dioxide Nanofluid',
-                                  'Mineral Oil'
-                                  ], value = 'Water', id={'type': 'in', 'name': 'fluid'})],
+                    dbc.Select(fluidoptions, value = 0, id={'type': 'in', 'name': 'fluid'})],
                    className='input-box'),
                 html.Div(["Length (m):", dbc.Input(id={'type': 'in', 'name': 'L'}, value='0.1', type='number')], className='input-box'),
                 html.Div(["Width (um):", dbc.Input(id={'type': 'in', 'name': 'W'}, value='100',  type='number')], className='input-box'),
@@ -67,18 +63,12 @@ def make_naive_app(server, prefix):
         try:
             L = float(L) # L of microchannel [m]
             W = float(W) * 1e-6 # W of microchannel [m]
-
-            if fluid == 'Water':
-                F = water
-            elif fluid == 'Ethylene glycol':
-                F = ethylene_glycol
-            elif fluid == 'Silicon dioxide nanofluid':
-                F = silicon_dioxide_nanofluid
-            elif fluid == 'Mineral oil':
-                F = mineral_oil
-            else:
-                F = water
             
+            try: 
+                F = fluids[fluid]
+            except KeyError:
+                F = fluids[0]
+
             T_in = float(temp_inlet) + 273.15 # temperature of inlet [K]
             T_w = float(temp_wall) + 273.15 # temperature of wall [K]
             Q = float(flow_rate) # flow rate [uL/min]m]

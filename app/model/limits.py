@@ -1,7 +1,7 @@
 from dash.exceptions import PreventUpdate
 import torch
 
-limits = {       
+limits = {      
     'L': {
         'min': 0,
         'max': 0.1,
