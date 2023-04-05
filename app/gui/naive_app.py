@@ -65,8 +65,9 @@ def make_naive_app(server, prefix):
             W = float(W) * 1e-6 # W of microchannel [m]
             
             try: 
-                F = fluids[fluid]
-            except KeyError:
+                F = fluids[int(fluid)]
+            except Exception as e:
+                print(e)
                 F = fluids[0]
 
             T_in = float(temp_inlet) + 273.15 # temperature of inlet [K]

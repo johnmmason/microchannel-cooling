@@ -334,7 +334,7 @@ select:focus {
     background-position: calc(100% - 15px) calc(1em - 1px), calc(100% - 20px) calc(1em - 1px), calc(100% - 2.5em) 0.1em;
     background-size: 5px 5px, 5px 5px, 1px 1.5em;
     background-repeat: no-repeat;
-    border-color: green;
+    border-color: var(--gunjo-iro);
     outline: 0;
 }
 
@@ -348,6 +348,7 @@ select:focus,
 textarea:focus {
     text-align: left;
     text-align: -webkit-left;
+    direction: ltr;
     z-index: 0;
     position: relative;
     top: 10px;
