@@ -189,9 +189,9 @@ textarea {
 }
 
 input[type='checkbox'] {
-    display: block;
-    width: 100%;
     padding: 5px;
+    text-align: right;
+    text-align: -webkit-right;
 }
 
 .input {
@@ -213,6 +213,28 @@ input[type='checkbox'] {
     z-index: 1;
     font-size: min(16px, 1.2vw);
     /* height: calc(1em + 0.375rem); */
+}
+
+.input-box:has(>label)::before {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    margin-top: -2px;
+    margin-bottom: -9px;
+}
+
+label {
+    display: flex !important;
+    flex-direction: row;
+    justify-content: space-between;
+    text-align: right !important;
+    text-align: -webkit-right !important;
+    border-bottom: 1px solid var(--kokushoku);
+    outline: none;
+    border-radius: 5%;
+    padding: 5px;
+    background: transparent;
+    backdrop-filter: saturate(0.5) brightness(1.25) hue-rotate(20deg);
+    -webkit-backdrop-filter: saturate(0.5) brightness(1.25) hue-rotate(20deg);
 }
 
 .input-box::before {

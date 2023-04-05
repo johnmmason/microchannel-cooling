@@ -1,4 +1,4 @@
-from dash import dcc, html, Input, Output
+from dash import dcc, html, Input, Output, State
 import dash_bootstrap_components as dbc
 import diskcache
 from gui.dash_template import new_app_opt
@@ -23,7 +23,9 @@ def make_naive_app_opt(server, prefix):
             html.Div([
 
                 # checkboxes
-                html.Div(["Choose a parameter to optimize:",
+                html.Div([
+                    html.H4("Choose Parameters to Optimize:"),
+                    html.Br(),
                     dcc.Checklist(
                        options=[
                            {'label': 'Length', 'value': 'L'},
@@ -31,15 +33,18 @@ def make_naive_app_opt(server, prefix):
                            {'label': 'Depth', 'value': 'D'},
                        ],
                        value=['D'], id ='par', className='input-box')]),
+                    html.Br(),
                     # I think this is important for user to choose
                     html.Div(["Fluid:",
                         dbc.Select(fluidoptions, value = 0, id='fluid')],
                     className='input-box'),
                     # Cassandre needs to make textboxes for initial input and then maximum iterations/ tolerance for 
+                    html.Br(),
                     html.Div([
                         html.P(id="paragraph_id", children=["Run Optimization"]),
                         html.Progress(id="progress_bar"),
                     ]),
+                    html.Br(),
                     html.Button(id="button_id", children="Run", n_clicks=0),
                     html.Button(id="cancel_button_id", children="Cancel Running Job"),
                 ])
@@ -51,8 +56,8 @@ def make_naive_app_opt(server, prefix):
         output=Output("paragraph_id", "children"),
         inputs=[
             Input('button_id', 'n_clicks'),
-            Input('par','value'),
-            Input('fluid','value'),
+            State('par','value'),
+            State('fluid','value'),
         ],
         running=[
             (Output("button_id", "disabled"), True, False),
