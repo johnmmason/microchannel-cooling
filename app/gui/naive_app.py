@@ -2,12 +2,13 @@ import json
 import numpy as np
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
-from dash import dcc, html, Input, Output, ctx
+from dash import dcc, html, Input, Output, ctx, MATCH, ALL
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 from gui.dash_template import new_app
 from model.naive_model import MicroChannelCooler, Geometry
-from model.fluids import water, ethylene_glycol, silicon_dioxide_nanofluid, mineral_oil
+from model.fluids import fluids, fluidoptions
+from model.limits import test_input, test_single_input
 from config import update_style
 def make_naive_app(server, prefix):
 
@@ -21,64 +22,55 @@ def make_naive_app(server, prefix):
             html.Div([
                 #html.Div(["Choose a parameter to optimize:",
                 #    dcc.RadioItems([
-                #                 {'label': 'Length', 'value': 'length'},
-                #                 {'label': 'Width', 'value': 'width'},
+                #                 {'label': 'Length', 'value': 'L'},
+                #                 {'label': 'Width', 'value': 'W'},
                 #                 {'label': 'Depth', 'value': 'depth'},
                 #                 {'label': 'No Optimization', 'value': 'no'},
                 #                 ], value = 'no', id = 'opt')],
                 #   ),
-		        html.Div(["Select a Fluid",
-                    dcc.Dropdown(['Water',
-                                  'Ethylene glycol',
-                                  'Silicon dioxide nanofluid',
-                                  'Mineral oil'
-                                  ], value = 'Water', id='fluid')],
-                   ),
-                html.Div(["Length (m):", dcc.Input(id='length', value='0.1', type='text')]),
-                html.Div(["Width (um):", dcc.Input(id='width', value='100', type='text')]),
-                html.Div(["Depth (um):", dcc.Input(id='depth-from', value='10', type='text'),
-                        " to ", dcc.Input(id='depth-to', value='50', type='text')]),
-                html.Div(["Inlet Temperature (C):", dcc.Input(id='temp-inlet', value='20', type='text')]),
-                html.Div(["Wall Temperature (C):", dcc.Input(id='temp-wall', value='100', type='text')]),
-                html.Div(["Flow Rate (uL/min):", dcc.Input(id='flow-rate', value='100', type='text')]),
+                html.Div(id='err'),
                 html.Br(),
-                html.Div(id='err')
-                ], className='input'),
-                html.Div(className='hspace'),
-                html.Div([dcc.Graph(id='plot')], className='plot'),
+		        html.Div(["Fluid:",
+                    dbc.Select(fluidoptions, value = 0, id={'type': 'in', 'name': 'fluid'})],
+                   className='input-box'),
+                html.Div(["Length (m):", dbc.Input(id={'type': 'in', 'name': 'L'}, value='0.1', type='number')], className='input-box'),
+                html.Div(["Width (um):", dbc.Input(id={'type': 'in', 'name': 'W'}, value='100',  type='number')], className='input-box'),
+                html.Div(["Depth (um) (start):", dbc.Input(id={'type': 'in', 'name': 'D_from'}, value='10', type='number')], className='input-box'),
+                html.Div(["Depth (um) (end):",   dbc.Input(id={'type': 'in', 'name': 'D_to'}, value='50', type='number')], className='input-box'),
+                html.Div(["Inlet Temperature (C):", dbc.Input(id={'type': 'in', 'name': 'T_in'}, value='20', type='number')], className='input-box'),
+                html.Div(["Wall Temperature (C):",  dbc.Input(id={'type': 'in', 'name': 'T_w'}, value='100', type='number')], className='input-box'),
+                html.Div(["Flow Rate (uL/min):",    dbc.Input(id={'type': 'in', 'name': 'Q'}, value='100', type='number')], className='input-box'),
+            ], className='input'),
+            html.Div(className='hspace'),
+            html.Div([dcc.Graph(id='plot')], className='plot'),
         ], className='row'),
+        html.Div(id='cancel_button_id', style={'display': 'none'}), # workaround for dash errors.
     ])
 
     @app.callback(
         Output(component_id='plot', component_property='figure'),
-        Input('fluid','value'),
-        Input('length','value'),
-        Input('width','value'),
-        Input('depth-from','value'),
-        Input('depth-to','value'),
-        Input('temp-inlet','value'),
-        Input('temp-wall','value'),
-        Input('flow-rate', 'value')
+        Input({'type': 'in', 'name': 'fluid'},'value'),
+        Input({'type': 'in', 'name': 'L'},'value'),
+        Input({'type': 'in', 'name': 'W'},'value'),
+        Input({'type': 'in', 'name': 'D_from'},'value'),
+        Input({'type': 'in', 'name': 'D_to'},'value'),
+        Input({'type': 'in', 'name': 'T_in'},'value'),
+        Input({'type': 'in', 'name': 'T_w'},'value'),
+        Input({'type': 'in', 'name': 'Q'}, 'value')
     )
-    def update_output_div(fluid, length, width, depth_from, depth_to, temp_inlet, temp_wall, flow_rate):
+    def update_output_div(fluid, L, W, depth_from, depth_to, temp_inlet, temp_wall, flow_rate):
 
         try:
-            L = float(length) # length of microchannel [m]
-            W = float(width) * 1e-6 # width of microchannel [m]
-
-            if fluid == 'Water':
-                F = water
-            elif fluid == 'Ethylene glycol':
-                F = ethylene_glycol
-            elif fluid == 'Silicon dioxide nanofluid':
-                F = silicon_dioxide_nanofluid
-            elif fluid == 'Mineral oil':
-                F = mineral_oil
-            else:
-                F = water
+            L = float(L) # L of microchannel [m]
+            W = float(W) * 1e-6 # W of microchannel [m]
             
-            T_in = float(temp_inlet)  + 273 # temperature of inlet [K]
-            T_w = float(temp_wall) + 273 # temperature of wall [K]
+            try: 
+                F = fluids[fluid]
+            except KeyError:
+                F = fluids[0]
+
+            T_in = float(temp_inlet) + 273.15 # temperature of inlet [K]
+            T_w = float(temp_wall) + 273.15 # temperature of wall [K]
             Q = float(flow_rate) # flow rate [uL/min]m]
 
             D_low = float(depth_from)
@@ -93,15 +85,18 @@ def make_naive_app(server, prefix):
         cooler = MicroChannelCooler(geom, F, T_in, T_w, Q)
         q, dP, T_out = cooler.solve()
 
-        fig = make_subplots(rows=1, cols=2, column_widths=[.5, .5])
+        fig = make_subplots(rows=1, cols=3, column_widths=[.33, .33, .33])
 
         fig.add_trace(row=1, col=1, trace=go.Scatter(x=D, y=q*1e-4))
         fig.add_trace(row=1, col=2, trace=go.Scatter(x=D, y=dP*0.000145038))
+        fig.add_trace(row=1, col=3, trace=go.Scatter(x=D, y=T_out-273.15))
 
         fig.update_xaxes(title_text="Channel Depth (m)", row=1, col=1)
         fig.update_xaxes(title_text="Channel Depth (m)", row=1, col=2)
+        fig.update_xaxes(title_text="Channel Depth (m)", row=1, col=3)
         fig.update_yaxes(title_text="Heat Flux (W/cm2)", row=1, col=1)
         fig.update_yaxes(title_text="Backpressure (psi)", row=1, col=2)
+        fig.update_yaxes(title_text="Outlet Temperature (C)", row=1, col=3)
 
         fig.update_layout(height=600, showlegend=False)
         update_style(fig)
@@ -110,49 +105,25 @@ def make_naive_app(server, prefix):
 
     @app.callback(
         Output('err', 'children'),
-        Input('length','value'),
-        Input('width','value'),
-        Input('depth-from','value'),
-        Input('depth-to','value'),
-        Input('temp-inlet','value'),
-        Input('temp-wall','value'),
-        Input('flow-rate', 'value')
+        inputs = dict(
+            fluid = Input({'type': 'in', 'name': 'fluid'},'value'),
+            L = Input({'type': 'in', 'name': 'L'},'value'),
+            W = Input({'type': 'in', 'name': 'W'},'value'),
+            D_from =Input({'type': 'in', 'name': 'D_from'},'value'),
+            D_to = Input({'type': 'in', 'name': 'D_to'},'value'),
+            T_in = Input({'type': 'in', 'name': 'T_in'},'value'),
+            T_w = Input({'type': 'in', 'name': 'T_w'},'value'),
+            Q = Input({'type': 'in', 'name': 'Q'}, 'value')
+        )
     )
-    def update_warning_div(length, width, depth_from, depth_to, temp_inlet, temp_wall, flow_rate):
-
-        errs = []
-        try:
-            if float(length) < 0 or float(length) > 0.1:
-                errs.append('Length')
-
-            if float(width) < 0 or float(width) > 1000:
-                errs.append('Width')
-
-            if float(depth_from) < 0 or float(depth_from) >= 100 or float(depth_from) >= float(depth_to):
-                errs.append('Depth (start)')
-
-            if float(depth_to) <= 0 or float(depth_to) > 100:
-                errs.append('Depth (end)')
-
-            if float(temp_inlet) <= 0 or float(temp_inlet) > 20:
-                errs.append('Inlet Temperature')
-
-            if float(temp_wall) < float(temp_inlet):
-                errs.append('Wall Temperature')
-
-            if float(flow_rate) < 1:
-                errs.append('Flow Rate')
-
-            if float(flow_rate) > 1000:
-                errs.append('Flow Rate')
-
-        except ValueError:
-            raise PreventUpdate
-
+    def update_warning_div(**kwargs):
+        # need to follow optimization convention
+        errs, block, severity = test_input(kwargs)
+        print(errs)
         if len(errs) > 0:
 
             div_contents = [
-                'The following parameters are out of bounds:',
+                'The following parameters may be invalid:',
                 html.Br(), html.Br()
                 ]
 
@@ -163,5 +134,17 @@ def make_naive_app(server, prefix):
             return html.Div(div_contents)
                             
         else : return ""
+        
+    @app.callback(
+        Output({'type': 'in', 'name': MATCH},'valid'),
+        Output({'type': 'in', 'name': MATCH}, 'invalid'),
+        Output({'type': 'in', 'name': MATCH}, 'value'),
+        Input( {'type': 'in', 'name': MATCH},'value'),
+        Input( {'type': 'in', 'name': MATCH},'id')
+    )
+    def check_validity(value, cid):
+        err,block,severity = test_single_input(cid['name'], value)
+        a = (len(err) == 0)
+        return (a, block, value) #
     
     return app.server

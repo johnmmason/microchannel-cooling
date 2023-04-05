@@ -33,3 +33,7 @@ mineral_oil = Fluid(rho = 820,
                     mu = 0.07,
                     cp = 2000,
                     k = 0.14)
+
+fluids = [water, ethylene_glycol, silicon_dioxide_nanofluid, mineral_oil]
+fluidnames = ['Water', 'Ethylene Glycol', 'SiO2 Nanofluid', 'Mineral Oil']
+fluidoptions = [{'label': fluidnames[i], 'value': i} for i in range(len(fluids))]

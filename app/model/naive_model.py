@@ -25,7 +25,7 @@ def naive_model(L, W, D, rho, mu, cp, k, T_in, T_w, Q):
     f = 64/Re
     dP = ( f * L * rho * (v**2) ) / ( 2 * D ) # pressure loss [Pa]
 
-    T_out = T_in + q / (rho * Q * 1.67e-4 * cp) # outlet temperature [K]
+    T_out = T_in + q / (rho * Q * 1.67e-8 * cp) # outlet temperature [K]
 
     return q, dP, T_out
 
@@ -78,8 +78,8 @@ if __name__ == '__main__':
     W = 100e-6 # width of microchannel [m]
     D = np.arange(10, 50, 1) * 1e-6 # depth of microchannel [m]
 
-    T_in = 20 + 273 # inlet temperature [K]
-    T_w = 100 + 273 # inlet temperature [K]
+    T_in = 20 + 273.15 # inlet temperature [K]
+    T_w = 100 + 273.15 # inlet temperature [K]
 
     Q = 100 # flow rate [uL/min]
 
@@ -89,7 +89,7 @@ if __name__ == '__main__':
     q, dP, T_out = cooler.solve()
 
 
-    fig, (ax1, ax2)  = plt.subplots(1, 2)
+    fig, (ax1, ax2, ax3)  = plt.subplots(1, 3)
 
     fig.set_figwidth(10)
     fig.set_figheight(6)
@@ -104,5 +104,10 @@ if __name__ == '__main__':
     ax2.set_xlabel('D ($\mu m$)')
     ax2.set_ylabel('$\delta P$ (psi)')
     ax2.set_xscale('log')
+
+    ax3.plot( D, T_out-273.15 )
+    ax3.set_xlabel('D ($\mu m$)')
+    ax3.set_ylabel('Output Coolant Temperature ($^\circ C$)')
+    ax3.set_xscale('log')
 
     plt.show()

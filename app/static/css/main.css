@@ -68,13 +68,27 @@
     background-color: white;
     background-image: url("../img/bkg3.png");
     background-blend-mode: difference;
-    filter: brightness(1.0) hue-rotate(-10deg) saturate(0.7) brightness(1.4) hue-rotate(-200deg);
-    /*-15, -185 */
+    /* filter: brightness(1.0) hue-rotate(-10deg) saturate(0.7) brightness(1.2) hue-rotate(-220deg); */
+    animation-name: lerp;
+    animation-duration: 480s;
+    animation-iteration-count: infinite;
+    /*-15, -185, -200 */
     /* TODO adjust until clarity is reached*/
 }
 
+@keyframes lerp {
+    0% {
+        filter: brightness(1.0) hue-rotate(-10deg) saturate(0.7) brightness(1.2) hue-rotate(-185deg)
+    }
+    50% {
+        filter: brightness(1.0) hue-rotate(-10deg) saturate(0.7) brightness(1.2) hue-rotate(-155deg)
+    }
+    100% {
+        filter: brightness(1.0) hue-rotate(-10deg) saturate(0.7) brightness(1.2) hue-rotate(-185deg)
+    }
+}
+
 .bkg {
-    background: transparent;
     /* background-blend-mode: soft-light; */
     filter: none;
     transform: none;
@@ -94,26 +108,13 @@ h1 {
     padding-right: 2rem;
 }
 
-.input {
-    width: 20%;
-    left: 0px;
-    padding-top: 10%;
-    padding-bottom: 10%;
-    padding-left: 10px;
-    padding-right: 10px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-around;
-    flex-wrap: wrap;
-}
-
 .hspace {
     content: "";
-    width: 8%;
+    width: 4%;
 }
 
 .plot {
-    width: 62%;
+    width: 70%;
     min-width: 700px;
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);

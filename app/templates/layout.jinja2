@@ -16,7 +16,7 @@
   <style type="text/css">
     .hidden {display:none;}
   </style>
-  <script type="text/javascript" src="/scripts/jquery.js"></script>
+  <script type="text/javascript" src="{{ url_for('static', filename='scripts/jquery.js') }}"></script>
   <script type="text/javascript">
     $('html').addClass('hidden');
     $(document).ready(function() {    // EDIT: From Adam Zerner's comment below: Rather use load: $(window).on('load', function () {...});
@@ -24,7 +24,8 @@
      });  
   </script>
   <style>
-  @import url('../ttf/Kiona-Regular.ttf');
+  @import url('{{ url_for('static', filename='ttf/Kiona-Regular.ttf') }}');
+  @import url('{{ url_for('static', filename='ttf/AvenirLTStd-Book.ttf') }}');
   </style>
   <link rel="stylesheet" href="{{proxy}}{{ url_for('static', filename='css/colors.css') }}" />
   <link rel="stylesheet" href="{{proxy}}{{ url_for('static', filename='css/scroll.css') }}" />
