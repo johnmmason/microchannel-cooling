@@ -3,7 +3,7 @@ import torch
 
 limits = {      
     'L': {
-        'min': 0.02,
+        'min': 0.001,
         'max': 0.1,
         'type': float,
     },
