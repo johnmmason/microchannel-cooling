@@ -33,7 +33,7 @@ def make_naive_app(server, prefix):
 		        html.Div(["Fluid:",
                     dbc.Select(fluidoptions, value = 0, id={'type': 'in', 'name': 'fluid'})],
                    className='input-box'),
-                html.Div(["Length (m):", dbc.Input(id={'type': 'in', 'name': 'L'}, value='0.1', type='number')], className='input-box'),
+                html.Div(["Length (m):", dbc.Input(id={'type': 'in', 'name': 'L'}, value='0.01', type='number')], className='input-box'),
                 html.Div(["Width (um):", dbc.Input(id={'type': 'in', 'name': 'W'}, value='100',  type='number')], className='input-box'),
                 html.Div(["Depth (um) (start):", dbc.Input(id={'type': 'in', 'name': 'D_from'}, value='10', type='number')], className='input-box'),
                 html.Div(["Depth (um) (end):",   dbc.Input(id={'type': 'in', 'name': 'D_to'}, value='50', type='number')], className='input-box'),
@@ -82,13 +82,21 @@ def make_naive_app(server, prefix):
         except:
             raise PreventUpdate
 
-        geom = Geometry(L, W, D)
-        cooler = MicroChannelCooler(geom, F, T_in, T_w, Q)
-        q, dP, T_out = cooler.solve()
+        q = np.empty( len(D) )
+        dP = np.empty( len(D) )
+        T_out = np.empty( len(D) )
+        
+        for i in range(len(D)):
+
+            D_ = D[i]
+            
+            geom = Geometry(L, W, D_)
+            cooler = MicroChannelCooler(geom, F, T_in, T_w, Q)
+            q[i], dP[i], T_out[i] = cooler.solve()
 
         fig = make_subplots(rows=1, cols=3, column_widths=[.33, .33, .33])
 
-        fig.add_trace(row=1, col=1, trace=go.Scatter(x=D, y=q*1e-4))
+        fig.add_trace(row=1, col=1, trace=go.Scatter(x=D, y=q))
         fig.add_trace(row=1, col=2, trace=go.Scatter(x=D, y=dP*0.000145038))
         fig.add_trace(row=1, col=3, trace=go.Scatter(x=D, y=T_out-273.15))
 
@@ -98,6 +106,33 @@ def make_naive_app(server, prefix):
         fig.update_yaxes(title_text="Heat Flux (W/cm2)", row=1, col=1)
         fig.update_yaxes(title_text="Backpressure (psi)", row=1, col=2)
         fig.update_yaxes(title_text="Outlet Temperature (C)", row=1, col=3)
+
+
+        RANGE_CONSTANT = 0.1
+        
+        # Fix for extremely small variations in heat flux
+        
+        q_range = ( np.max(q) - np.min(q) ) * RANGE_CONSTANT
+
+        if q_range < 0.001: q_range = 0.01
+        
+        q_lower = np.min(q) - q_range
+        q_upper = np.max(q) + q_range
+        
+        fig.update_layout(yaxis1 = dict(range=[q_lower, q_upper]))
+        
+
+        # Fix for extremely small variations in outlet temperature
+
+        T_range = ( np.max(T_out) - np.min(T_out) ) * RANGE_CONSTANT
+
+        if T_range < 0.01: T_range = 0.01
+
+        T_lower = np.min(T_out) - T_range - 273.15
+        T_upper = np.max(T_out) + T_range - 273.15
+
+        fig.update_layout(yaxis3 = dict(range=[T_lower, T_upper]))
+        
 
         fig.update_layout(height=600, showlegend=False)
         update_style(fig)

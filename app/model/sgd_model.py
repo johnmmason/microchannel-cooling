@@ -45,7 +45,7 @@ def sgd_model(parameter_choice, optimize_type, progress, learning_rate, num_iter
     """
     
     # Step 1: Create PyTorch Variables for the input parameters
-    opt_names = ["L", "W", "D"]
+    opt_names = ["L", "W", "H"]
     var_dict, old_var_dict = make_variables(default,opt_names)
 
     # Step 2: Set the optimization hyperparameters
@@ -127,7 +127,7 @@ class SGD_MicroChannelCooler(MicroChannelCooler):
             W (float): optimized width [m]
             D (float): optimized depth [m]
         '''
-        params = {'L': self.geometry.L, 'W': self.geometry.W, 'D': self.geometry.D,
+        params = {'L': self.geometry.L, 'W': self.geometry.W, 'H': self.geometry.D,
                   'rho': self.fluid.rho, 'mu': self.fluid.mu, 'cp': self.fluid.cp, 'k': self.fluid.k,
                   'T_in': self.T_in, 'T_w': self.T_w, 'Q': self.Q,}
         L, W, D = sgd_model(parameter_choice, optimize_type, progress, learning_rate, num_iterations, **params)

@@ -2,7 +2,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from fluids import Fluid, water
+from model.fluids import Fluid, water
 
 def naive_model(L, W, H, rho, mu, cp, k, T_in, T_w, Q, N_ELE=1000):
     # Calculate the heat transfer in a rectangular microchannel with the specified
@@ -56,7 +56,7 @@ def naive_model(L, W, H, rho, mu, cp, k, T_in, T_w, Q, N_ELE=1000):
         T[i] = T_out
         E += dE
 
-    q = E / ( 4 * W * L * 1000**2 )
+    q = E / ( 4 * W * L * 10000 )
     
     return q, dP, T[N_ELE-1]
 
@@ -111,7 +111,7 @@ class MicroChannelCooler:
 
         return q, dP, T_out
 
-if __name__ == '__main__':
+def main():
 
     L = 0.1 # length of microchannel [m]
     W = 100e-6 # width of microchannel [m]
@@ -129,3 +129,7 @@ if __name__ == '__main__':
     print('Outlet temperature: {:.4f} C'.format(T_out - 273.15))
     print('Heat Flux: {:.4f} W/cm2'.format(E))
     print('Backpressure: {:.4f} PSI'.format(dP * 0.000145038))
+
+if __name__ == '__main__':
+
+    main()
