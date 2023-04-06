@@ -31,12 +31,12 @@ def make_naive_app(server, prefix):
                 html.Div(id='err'),
                 html.Br(),
 		        html.Div(["Fluid:",
-                    dbc.Select(fluidoptions, value = 'Water', id={'type': 'in', 'name': 'fluid'})],
+                    dbc.Select(fluidoptions, placeholder="Water", value = 0, id={'type': 'in', 'name': 'fluid'})],
                    className='input-box'),
                 html.Div(["Length (m):", dbc.Input(id={'type': 'in', 'name': 'L'}, value='0.01', type='number')], className='input-box'),
                 html.Div(["Width (um):", dbc.Input(id={'type': 'in', 'name': 'W'}, value='100',  type='number')], className='input-box'),
-                html.Div(["Depth (um) (start):", dbc.Input(id={'type': 'in', 'name': 'D_from'}, value='10', type='number')], className='input-box'),
-                html.Div(["Depth (um) (end):",   dbc.Input(id={'type': 'in', 'name': 'D_to'}, value='50', type='number')], className='input-box'),
+                html.Div(["Depth (um) (start):", dbc.Input(id={'type': 'in', 'name': 'H_from'}, value='10', type='number')], className='input-box'),
+                html.Div(["Depth (um) (end):",   dbc.Input(id={'type': 'in', 'name': 'H_to'}, value='50', type='number')], className='input-box'),
                 html.Div(["Inlet Temperature (C):", dbc.Input(id={'type': 'in', 'name': 'T_in'}, value='20', type='number')], className='input-box'),
                 html.Div(["Wall Temperature (C):",  dbc.Input(id={'type': 'in', 'name': 'T_w'}, value='100', type='number')], className='input-box'),
                 html.Div(["Flow Rate (uL/min):",    dbc.Input(id={'type': 'in', 'name': 'Q'}, value='100', type='number')], className='input-box'),
@@ -52,8 +52,8 @@ def make_naive_app(server, prefix):
         Input({'type': 'in', 'name': 'fluid'},'value'),
         Input({'type': 'in', 'name': 'L'},'value'),
         Input({'type': 'in', 'name': 'W'},'value'),
-        Input({'type': 'in', 'name': 'D_from'},'value'),
-        Input({'type': 'in', 'name': 'D_to'},'value'),
+        Input({'type': 'in', 'name': 'H_from'},'value'),
+        Input({'type': 'in', 'name': 'H_to'},'value'),
         Input({'type': 'in', 'name': 'T_in'},'value'),
         Input({'type': 'in', 'name': 'T_w'},'value'),
         Input({'type': 'in', 'name': 'Q'}, 'value')
@@ -74,31 +74,31 @@ def make_naive_app(server, prefix):
             T_w = float(temp_wall) + 273.15 # temperature of wall [K]
             Q = float(flow_rate) # flow rate [uL/min]m]
 
-            D_low = float(depth_from)
-            D_high = float(depth_to)
+            H_low = float(depth_from)
+            H_high = float(depth_to)
 
-            assert D_low < D_high
-            D = np.arange( D_low, D_high, 1 ) * 1e-6 #depth of microchannel [m]
+            assert H_low < H_high
+            H = np.arange( H_low, H_high, 1 ) * 1e-6 #depth of microchannel [m]
         except:
             raise PreventUpdate
 
-        q = np.empty( len(D) )
-        dP = np.empty( len(D) )
-        T_out = np.empty( len(D) )
+        q = np.empty( len(H) )
+        dP = np.empty( len(H) )
+        T_out = np.empty( len(H) )
         
-        for i in range(len(D)):
+        for i in range(len(H)):
 
-            D_ = D[i]
+            H_ = H[i]
             
-            geom = Geometry(L, W, D_)
+            geom = Geometry(L, W, H_)
             cooler = MicroChannelCooler(geom, F, T_in, T_w, Q)
             q[i], dP[i], T_out[i] = cooler.solve()
 
         fig = make_subplots(rows=1, cols=3, column_widths=[.33, .33, .33])
 
-        fig.add_trace(row=1, col=1, trace=go.Scatter(x=D, y=q))
-        fig.add_trace(row=1, col=2, trace=go.Scatter(x=D, y=dP*0.000145038))
-        fig.add_trace(row=1, col=3, trace=go.Scatter(x=D, y=T_out-273.15))
+        fig.add_trace(row=1, col=1, trace=go.Scatter(x=H, y=q))
+        fig.add_trace(row=1, col=2, trace=go.Scatter(x=H, y=dP*0.000145038))
+        fig.add_trace(row=1, col=3, trace=go.Scatter(x=H, y=T_out-273.15))
 
         fig.update_xaxes(title_text="Channel Depth (m)", row=1, col=1)
         fig.update_xaxes(title_text="Channel Depth (m)", row=1, col=2)
@@ -145,8 +145,8 @@ def make_naive_app(server, prefix):
             fluid = Input({'type': 'in', 'name': 'fluid'},'value'),
             L = Input({'type': 'in', 'name': 'L'},'value'),
             W = Input({'type': 'in', 'name': 'W'},'value'),
-            D_from =Input({'type': 'in', 'name': 'D_from'},'value'),
-            D_to = Input({'type': 'in', 'name': 'D_to'},'value'),
+            H_from =Input({'type': 'in', 'name': 'H_from'},'value'),
+            H_to = Input({'type': 'in', 'name': 'H_to'},'value'),
             T_in = Input({'type': 'in', 'name': 'T_in'},'value'),
             T_w = Input({'type': 'in', 'name': 'T_w'},'value'),
             Q = Input({'type': 'in', 'name': 'Q'}, 'value')

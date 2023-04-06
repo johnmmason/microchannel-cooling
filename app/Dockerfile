@@ -1,6 +1,8 @@
 FROM python:3.9
 
 RUN ln -sf /usr/share/zoneinfo/America/Chicago /etc/localtime
+ENV NVIDIA_VISIBLE_DEVICES all
+ENV NVIDIA_DRIVER_CAPABILITIES compute,utility
 
 WORKDIR /app
 

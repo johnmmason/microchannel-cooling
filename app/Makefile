@@ -10,10 +10,10 @@ build :
 	docker build -t ${IMAGE} .
 
 run : build
-	docker run -dit --rm -p $(PORT):$(PORT) --name ${NAME} ${IMAGE}
+	docker run -dit --gpus all --rm -p $(PORT):$(PORT) --name ${NAME} ${IMAGE}
 
 debug : build
-	docker run -it --rm -p $(PORT):$(PORT) --name ${NAME} ${IMAGE}
+	docker run -it --gpus all --rm -p $(PORT):$(PORT) --name ${NAME} ${IMAGE}
 
 sleep :
 	sleep 1

@@ -3,17 +3,17 @@ import torch
 
 limits = {      
     'L': {
-        'min': 0,
+        'min': 0.02,
         'max': 0.1,
         'type': float,
     },
     'W': {
-        'min': 0,
+        'min': 1,
         'max': 1000,
         'type': float,
     },
-    'D': {
-        'min': 0,
+    'H': {
+        'min': 1,
         'max': 100,
         'type': float,
     },
@@ -37,7 +37,7 @@ limits = {
 errMsg = {
     'L': 'Length',
     'W': 'Width',
-    'D': 'Depth',
+    'H': 'Depth',
     'T_in': 'Inlet Temperature',
     'T_w': 'Wall Temperature',
     'Q': 'Flow Rate',

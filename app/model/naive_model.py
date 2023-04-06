@@ -61,16 +61,16 @@ def naive_model(L, W, H, rho, mu, cp, k, T_in, T_w, Q, N_ELE=1000):
     return q, dP, T[N_ELE-1]
 
 class Geometry:
-    def __init__(self, L, W, D):
+    def __init__(self, L, W, H):
         # Initialize Geometry
         #
         # L : channel length [m]
         # W : channel width [m]
-        # D : channel width [m]
+        # H : channel width [m]
         
         self.L = L
         self.W = W
-        self.D = D
+        self.H = H
 
 class MicroChannelCooler:
 
@@ -100,7 +100,7 @@ class MicroChannelCooler:
         
         q, dP, T_out = naive_model(self.geometry.L,
                                    self.geometry.W,
-                                   self.geometry.D,
+                                   self.geometry.H,
                                    self.fluid.rho,
                                    self.fluid.mu,
                                    self.fluid.cp,
