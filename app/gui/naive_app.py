@@ -31,7 +31,7 @@ def make_naive_app(server, prefix):
                 html.Div(id='err'),
                 html.Br(),
 		        html.Div(["Fluid:",
-                    dbc.Select(fluidoptions, value = 0, id={'type': 'in', 'name': 'fluid'})],
+                    dbc.Select(fluidoptions, value = 'Water', id={'type': 'in', 'name': 'fluid'})],
                    className='input-box'),
                 html.Div(["Length (m):", dbc.Input(id={'type': 'in', 'name': 'L'}, value='0.01', type='number')], className='input-box'),
                 html.Div(["Width (um):", dbc.Input(id={'type': 'in', 'name': 'W'}, value='100',  type='number')], className='input-box'),

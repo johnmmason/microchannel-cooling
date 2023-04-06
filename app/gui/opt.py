@@ -36,7 +36,7 @@ def make_naive_app_opt(server, prefix):
                     html.Br(),
                     # I think this is important for user to choose
                     html.Div(["Fluid:",
-                        dbc.Select(fluidoptions, value = 0, id='fluid')],
+                        dbc.Select(fluidoptions, value = 'Water', id='fluid')],
                     className='input-box'),
                     # Cassandre needs to make textboxes for initial input and then maximum iterations/ tolerance for 
                     html.Br(),
