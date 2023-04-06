@@ -2,6 +2,11 @@ NAME=sd-api
 version=0.1
 PORT=5000
 IMAGE=$(NAME):$(version)
+ifeq ($(shell nvidia-smi),)
+	DEVICE=
+else
+	DEVICE=--gpus all
+endif
 
 stop :
 	- docker kill ${NAME}
@@ -10,10 +15,10 @@ build :
 	docker build -t ${IMAGE} .
 
 run : build
-	docker run -dit --gpus all --rm -p $(PORT):$(PORT) --name ${NAME} ${IMAGE}
+	docker run -dit ${DEVICE} --rm -p $(PORT):$(PORT) --name ${NAME} ${IMAGE}
 
 debug : build
-	docker run -it --gpus all --rm -p $(PORT):$(PORT) --name ${NAME} ${IMAGE}
+	docker run -it ${DEVICE} --rm -p $(PORT):$(PORT) --name ${NAME} ${IMAGE}
 
 sleep :
 	sleep 1
