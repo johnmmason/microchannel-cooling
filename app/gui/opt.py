@@ -117,7 +117,7 @@ def make_naive_app_opt(server, prefix):
             print("canceling")
             cooler = _session(session_id, fluid) # get the session
             cancel_opt(cooler)
-            return ["All Optimization Canceled"]
+            return ["Optimization Canceled"]
         elif n_clicks > 0:
             cooler = _session(session_id, fluid) # make a new session
             L_optimized, W_optimized, H_optimized = cooler.solve_sgd(parameter_choice = par, optimize_type='default', progress=set_progress)
