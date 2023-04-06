@@ -1,19 +1,22 @@
-from dash import dcc, html, Input, Output, State
+import uuid
+from dash import dcc, html, Input, Output, State, callback_context as ctx
 import dash_bootstrap_components as dbc
 import diskcache
-from gui.dash_template import new_app_opt
+from gui.dash_template import new_app
 from model.naive_model import Geometry
 from model.fluids import fluids, fluidoptions
 from dash.long_callback import DiskcacheLongCallbackManager
-from model.sgd_model import SGD_MicroChannelCooler
+from model.sgd_model import SGD_MicroChannelCooler, cancel_opt
 import time
 
 def make_naive_app_opt(server, prefix):
+    
+    session_id = str(uuid.uuid4())
 
     cache = diskcache.Cache("./cache")
     long_manager = DiskcacheLongCallbackManager(cache)
 
-    app = new_app_opt(server, prefix, long_manager, centered='center')
+    app = new_app(server, prefix, long_manager, centered='center')
     app.title = "Naive Model"
     app.version = 0.1
     # don't use H2 - that is reserved for dropdowns in Flask right now
@@ -30,13 +33,13 @@ def make_naive_app_opt(server, prefix):
                        options=[
                            {'label': 'Length', 'value': 'L'},
                            {'label': 'Width', 'value': 'W'},
-                           {'label': 'Depth', 'value': 'D'},
+                           {'label': 'Depth', 'value': 'H'},
                        ],
-                       value=['D'], id ='par', className='input-box')]),
+                       value=['H'], id ='par', className='input-box')]),
                     html.Br(),
                     # I think this is important for user to choose
                     html.Div(["Fluid:",
-                        dbc.Select(fluidoptions, value = 0, id='fluid')],
+                        dbc.Select(fluidoptions, placeholder="Water", value = 0, id='fluid')],
                     className='input-box'),
                     # Cassandre needs to make textboxes for initial input and then maximum iterations/ tolerance for 
                     html.Br(),
@@ -53,11 +56,35 @@ def make_naive_app_opt(server, prefix):
 
             ], className='input'),		
         ])
+    
+    def _session(session_id, fluid):
+        @cache.memoize()
+        def make_(session_id):
+            L = 0.1 # length of microchannel [m]
+            W = 100e-6 # width of microchannel [m]
+            H = 50 * 1e-6 # depth of microchannel [m]
 
+            T_in = 20 + 273.15 # inlet temperature [K]
+            T_w = 100 + 273.15 # inlet temperature [K]
+
+            Q = 100 # flow rate [uL/min]
+            
+            try: 
+                F = fluids[fluid]
+            except Exception as e:
+                F = fluids[0]
+
+            geom = Geometry(L, W, H)
+            cooler = SGD_MicroChannelCooler(geom, F, T_in, T_w, Q)
+            return cooler
+        
+        return make_(session_id)
+  
     @app.long_callback(
         output=Output("paragraph_id", "children"),
         inputs=[
             Input('button_id', 'n_clicks'),
+            Input('cancel_button_id', 'n_clicks'),
             State('par','value'),
             State('fluid','value'),
         ],
@@ -82,27 +109,19 @@ def make_naive_app_opt(server, prefix):
 
 
 
-    def callback(set_progress, n_clicks, par, fluid):
-        if n_clicks > 0:
-            L = 0.1 # length of microchannel [m]
-            W = 100e-6 # width of microchannel [m]
-            D = 50 * 1e-6 # depth of microchannel [m]
-
-            T_in = 20 + 273.15 # inlet temperature [K]
-            T_w = 100 + 273.15 # inlet temperature [K]
-
-            Q = 100 # flow rate [uL/min]
-            
-            try: 
-                F = fluids[fluid]
-            except Exception as e:
-                F = fluids[0]
-    
-            geom = Geometry(L, W, D)
-            cooler = SGD_MicroChannelCooler(geom, F, T_in, T_w, Q)
-            L_optimized, W_optimized, D_optimized = cooler.solve_sgd(parameter_choice = par, optimize_type='default', progress=set_progress, num_iterations=5000)
-
-            return [f"L:\t{L_optimized},\nW:\t{W_optimized},\nD:\t{D_optimized}"]
+    def callback(set_progress, n_clicks, cancel, par, fluid): # don't remove the 'cancel' argument
+        set_progress((0, 100))
+        trigger = ctx.triggered[0]
+        print(trigger)
+        if trigger["prop_id"]=="cancel_button_id.n_clicks":
+            print("canceling")
+            cooler = _session(session_id, fluid) # get the session
+            cancel_opt(cooler)
+            return ["Optimization Canceled"]
+        elif n_clicks > 0:
+            cooler = _session(session_id, fluid) # make a new session
+            L_optimized, W_optimized, H_optimized = cooler.solve_sgd(parameter_choice = par, optimize_type='default', progress=set_progress)
+            return [f"Length:\t{L_optimized},\nWidth:\t{W_optimized},\nDepth:\t{H_optimized}"]
         else:
             return["Optimize Channel Parameters:"]
 
