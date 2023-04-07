@@ -19,9 +19,9 @@ water = Fluid(rho = 997, # density of water [kg/m^3]
               cp = 4180, # heat capacity of water [J/kg*K]
               k = 0.606) # thermal conductivity of water [W/m*K]
 
-ethylene_glycol = Fluid(rho = 1.11, # density of antifreeze [kg/m^3]
+ethylene_glycol = Fluid(rho = 1115, # density of antifreeze [kg/m^3]
                         mu = 0.0161, # viscosity of antifreeze [Pa*s]
-                        cp = 2.42,  # heat capacity of antifreeze [J/kg*K]
+                        cp = 2420,  # heat capacity of antifreeze [J/kg*K]
                         k =  0.25)  # thermal conductivity of antifreeze [W/m*k]
 
 silicon_dioxide_nanofluid = Fluid(rho = 1500,

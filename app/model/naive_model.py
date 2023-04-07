@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from model.fluids import Fluid, water
 
-def naive_model(L, W, H, rho, mu, cp, k, T_in, T_w, Q, N_ELE=1000):
+def naive_model(L, W, H, rho, mu, cp, k, T_in, T_w, Q, make_fields=False, N_ELE=1000):
     # Calculate the heat transfer in a rectangular microchannel with the specified
     # properties using a 1-dimensional enthalpy heat transfer model
     #
@@ -43,7 +43,8 @@ def naive_model(L, W, H, rho, mu, cp, k, T_in, T_w, Q, N_ELE=1000):
 
     dL = L/N_ELE
     
-    T = np.empty(N_ELE); T[0] = T_in
+    T = np.empty(N_ELE)
+    T[0] = T_in
     E = 0
 
     for i in range(1, N_ELE):
@@ -57,6 +58,9 @@ def naive_model(L, W, H, rho, mu, cp, k, T_in, T_w, Q, N_ELE=1000):
         E += dE
 
     q = E / ( 4 * W * L * 10000 )
+    
+    if make_fields:
+        return np.linspace(0, L, N_ELE), T
     
     return q, dP, T[N_ELE-1]
 
@@ -89,7 +93,7 @@ class MicroChannelCooler:
         self.T_w = T_w
         self.Q = Q
         
-    def solve(self):
+    def solve(self, make_fields=False):
         # Returns the heat flux, pressure drop, and output temperature
         # using the naive method
         #
@@ -98,18 +102,18 @@ class MicroChannelCooler:
         # dP : the pressure loss [Pa]
         # T_out : the outlet temperature [K]
         
-        q, dP, T_out = naive_model(self.geometry.L,
-                                   self.geometry.W,
-                                   self.geometry.H,
-                                   self.fluid.rho,
-                                   self.fluid.mu,
-                                   self.fluid.cp,
-                                   self.fluid.k,
-                                   self.T_in,
-                                   self.T_w,
-                                   self.Q)
+        return naive_model(self.geometry.L,
+                            self.geometry.W,
+                            self.geometry.H,
+                            self.fluid.rho,
+                            self.fluid.mu,
+                            self.fluid.cp,
+                            self.fluid.k,
+                            self.T_in,
+                            self.T_w,
+                            self.Q,
+                            make_fields=make_fields)
 
-        return q, dP, T_out
 
 def main():
 
