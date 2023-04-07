@@ -27,9 +27,9 @@ def make_naive_anly(server, prefix):
 		        html.Div(["Fluid:",
                     dbc.Select(fluidoptions, placeholder="Water", value = 0, id={'type': 'in', 'name': 'fluid'})],
                    className='input-box'),
-                html.Div(["Length (m):", dbc.Input(id={'type': 'in', 'name': 'L'}, value='0.01', type='number')], className='input-box'),
+                html.Div(["Length (m):", dbc.Input(id={'type': 'in', 'name': 'L'}, value='0.02', type='number')], className='input-box'),
                 html.Div(["Width (um):", dbc.Input(id={'type': 'in', 'name': 'W'}, value='100',  type='number')], className='input-box'),
-                html.Div(["Depth (um):", dbc.Input(id={'type': 'in', 'name': 'H'}, value='10', type='number')], className='input-box'),
+                html.Div(["Depth (um):", dbc.Input(id={'type': 'in', 'name': 'H'}, value='100', type='number')], className='input-box'),
                 html.Div(["Inlet Temperature (C):", dbc.Input(id={'type': 'in', 'name': 'T_in'}, value='20', type='number')], className='input-box'),
                 html.Div(["Wall Temperature (C):",  dbc.Input(id={'type': 'in', 'name': 'T_w'}, value='100', type='number')], className='input-box'),
                 html.Div(["Flow Rate (uL/min):",    dbc.Input(id={'type': 'in', 'name': 'Q'}, value='100', type='number')], className='input-box'),
@@ -100,9 +100,14 @@ def make_naive_anly(server, prefix):
         df = np.split(df, df[df.isnull().all(1)].index)[0] # split on NaN rows and take first
         df = df.sort_values(by=['X'])
         cW = df[df['Density'] < 2.3] #TODO: remove hard-coded Si density
+                                    
         cW = cW.sort_values(by=['X'])
         cx = cW['X'] - min(cW['X'])
         cx *= 0.01 # convert to m
+        
+        cW = cW[cW['X'] < -0.05]# TODO: remove hard-coded range
+        cx2 = cW['X'] - min(cW['X'])
+        cx2 *= 0.01 # convert to m
         cy = cW['Y']*0.01 # convert to m
         cz = cW['Z']*0.01 # convert to m
         cT = cW['Temp']
@@ -110,7 +115,7 @@ def make_naive_anly(server, prefix):
         vy = cW['Vy Vel']
         vz = cW['Vz Vel']
         
-        fig = make_subplots(rows=1, cols=2, column_widths=[.33, .66], specs=[[{"type": "xy"}, {"type": "volume"}, {"type": "volume"}]])
+        fig = make_subplots(rows=1, cols=2, column_widths=[.33, .66], specs=[[{"type": "xy"}, {"type": "volume"}]])
         update_style(fig)
         
         fig.add_trace(row=1, col=1, trace=go.Scatter(x=x, y=temp-273.15, line_color='red', name='Model'))
@@ -119,41 +124,43 @@ def make_naive_anly(server, prefix):
         fig.update_yaxes(title_text="Outlet Temperature (C)", row=1, col=1)
         
         
-        fit_data = np.array([cx,cy,cz]).T
+        fit_data = np.array([cx2,cy,cz]).T
         interp = LinearNDInterpolator(fit_data, cT)
-        x_ = np.linspace(min(cx),max(cx), 100)
+        x_ = np.linspace(min(cx2),max(cx2), 100)
         y_ = np.linspace(min(cy),max(cy), 20)
         z_ = np.linspace(min(cz),max(cz), 20)
 
         x, y, z = np.meshgrid(x_, y_, z_, indexing='ij')
-        cT2 = interp((x, y, z))
-        
-        fig.add_trace(row=1, col=2, trace=go.Volume(
-                                                x=x,
-                                                y=y,
-                                                z=z,
-                                                value=cT2,
-                                                isomin=0,
-                                                isomax=100,
-                                                opacity=0.1, # needs to be small to see through all surfaces
-                                                surface_count=17, # needs to be a large number for good volume rendering
-                                                name='Temperature',
-                                                ))
-        
+        cT2 = np.nan_to_num(interp((x, y, z))) - 273.15        
         fig.add_trace(row=1, col=2, trace=go.Cone(
-                                            x=cx,
+                                            x=cx2,
                                             y=cy,
                                             z=cz,
                                             u=vx,
                                             v=vy,
                                             w=vz,
-                                            colorscale='Blues',
+                                            colorscale='YlGnBu',
                                             sizemode="absolute",
-                                            sizeref=40,
-                                            name='Velocity',))
+                                            sizeref=4,
+                                            name='Velocity',
+                                            colorbar={"orientation": "v", "x": 1.1, "yanchor": "middle", "y": 0.5},))
+        
+        fig.add_trace(row=1, col=2, trace=go.Volume(
+                                                x=x.flatten(),
+                                                y=y.flatten(),
+                                                z=z.flatten(),
+                                                value=cT2.flatten(),
+                                                isomin=0,
+                                                isomax=100,
+                                                opacity=0.1, # needs to be small to see through all surfaces
+                                                surface_count=17, # needs to be a large number for good volume rendering
+                                                name='Temperature',
+                                                colorscale='YlOrRd'
+                                                ))
                                                         
-        fig.update_layout(yaxis_range=[0,100])
+        fig.update_layout(yaxis_range=[0,100]) 
         fig.update_layout(height=600, showlegend=False)
+        fig.show()
         
             
         return fig
