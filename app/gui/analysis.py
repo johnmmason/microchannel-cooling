@@ -159,7 +159,13 @@ def make_naive_anly(server, prefix):
                                                 ))
                                                         
         fig.update_layout(yaxis_range=[0,100]) 
-        fig.update_layout(height=600, showlegend=False)
+        fig.update_layout(legend=dict(
+            yanchor="bottom",
+            y=0.01,
+            xanchor="left",
+            x=0.01
+        ))
+        fig.update_layout(height=600)
         fig.show()
         
             
