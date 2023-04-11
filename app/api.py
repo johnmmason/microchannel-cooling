@@ -38,9 +38,11 @@ def hello_world():
 # dashapp example
 from gui.naive_app import make_naive_app
 from gui.opt import make_naive_app_opt
+from gui.analysis import make_naive_anly
 with app.app_context():
     app = make_naive_app(app, '/naive/')
     app = make_naive_app_opt(app, '/opt/')
+    app = make_naive_anly(app, '/naive/anly/')
 
 
 if __name__ == '__main__':

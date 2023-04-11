@@ -7,6 +7,7 @@ from model.naive_model import Geometry
 from model.fluids import fluids, fluidoptions
 from dash.long_callback import DiskcacheLongCallbackManager
 from model.sgd_model import SGD_MicroChannelCooler, cancel_opt
+from model.limits import microscale, kelvin, limits
 import time
 
 def make_naive_app_opt(server, prefix):
@@ -60,14 +61,17 @@ def make_naive_app_opt(server, prefix):
     def _session(session_id, fluid):
         @cache.memoize()
         def make_(session_id):
-            L = 0.1 # length of microchannel [m]
-            W = 100e-6 # width of microchannel [m]
-            H = 50 * 1e-6 # depth of microchannel [m]
+            
+            # TODO make this automatic using structure in limits dict.
+            # TODO add user override for initial values
+            L = limits['L']['init'] # length of microchannel [m]
+            W = limits['W']['init'] * microscale # width of microchannel [m]
+            H = limits['H']['init'] * microscale # depth of microchannel [m]
 
-            T_in = 20 + 273.15 # inlet temperature [K]
-            T_w = 100 + 273.15 # inlet temperature [K]
+            T_in = limits['T_in']['init'] + kelvin # inlet temperature [K]
+            T_w = limits['T_w']['init'] + kelvin # inlet temperature [K]
 
-            Q = 100 # flow rate [uL/min]
+            Q = limits['Q']['init'] # flow rate [uL/min]
             
             try: 
                 F = fluids[fluid]
@@ -75,7 +79,7 @@ def make_naive_app_opt(server, prefix):
                 F = fluids[0]
 
             geom = Geometry(L, W, H)
-            cooler = SGD_MicroChannelCooler(geom, F, T_in, T_w, Q)
+            cooler = SGD_MicroChannelCooler(T_in, T_w, Q, geom, F)
             return cooler
         
         return make_(session_id)
