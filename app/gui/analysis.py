@@ -10,11 +10,18 @@ from dash.exceptions import PreventUpdate
 from gui.dash_template import new_app
 from model.naive_model import MicroChannelCooler, Geometry
 from model.fluids import fluids, fluidoptions
-from model.limits import test_input, test_single_input
+from model.limits import test_input, test_single_input, microscale, kelvin
 from config import update_style
+
+import diskcache
+from dash.long_callback import DiskcacheLongCallbackManager
+
 def make_naive_anly(server, prefix):
 
-    app = new_app(server, prefix, centered='center')
+    cache = diskcache.Cache("./cache")
+    long_manager = DiskcacheLongCallbackManager(cache)
+
+    app = new_app(server, prefix, long_manager, centered='center')
     app.title = "Naive Model"
     app.version = 0.1
     # don't use H2 - that is reserved for dropdowns in Flask right now
@@ -71,98 +78,99 @@ def make_naive_anly(server, prefix):
 
         try:
             L = float(L) # L of microchannel [m]
-            W = float(W) * 1e-6 # W of microchannel [m]
-            H = float(H) * 1e-6 # H of microchannel [m]
+            W = float(W) * microscale # W of microchannel [m]
+            H = float(H) * microscale # H of microchannel [m]
             try: 
                 F = fluids[int(fluid)]
             except Exception as e:
                 print(e)
                 F = fluids[0]
 
-            T_in = float(temp_inlet) + 273.15 # temperature of inlet [K]
-            T_w = float(temp_wall) + 273.15 # temperature of wall [K]
+            T_in = float(temp_inlet) + kelvin # temperature of inlet [K]
+            T_w = float(temp_wall) + kelvin # temperature of wall [K]
             Q = float(flow_rate) # flow rate [uL/min]m]
 
             
 
         except:
             raise PreventUpdate
+        @cache.memoize()
+        def make_fig(content):
+            geom = Geometry(L, W, H)
+            cooler = MicroChannelCooler(T_in, T_w, Q, geom, F)
+            x,temp = cooler.solve(make_fields=True)
 
+            # CSV
+            content_type, content_string = content.split(',')
+            decoded = base64.b64decode(content_string)
+            df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+            df = np.split(df, df[df.isnull().all(1)].index)[0] # split on NaN rows and take first
+            df = df.sort_values(by=['X'])
+            cW = df[df['Density'] < 2.3] #TODO: remove hard-coded Si density
+                                        
+            cW = cW.sort_values(by=['X'])
+            cx = cW['X'] - min(cW['X'])
+            cx *= 0.01 # convert to m
             
-        geom = Geometry(L, W, H)
-        cooler = MicroChannelCooler(geom, F, T_in, T_w, Q)
-        x,temp = cooler.solve(make_fields=True)
+            cW = cW[cW['X'] < -0.05]# TODO: remove hard-coded range
+            cx2 = cW['X'] - min(cW['X'])
+            cx2 *= 0.01 # convert to m
+            cy = cW['Y']*0.01 # convert to m
+            cz = cW['Z']*0.01 # convert to m
+            cT = cW['Temp']
+            vx = cW['Vx Vel']
+            vy = cW['Vy Vel']
+            vz = cW['Vz Vel']
+            
+            fig = make_subplots(rows=1, cols=2, column_widths=[.33, .66], specs=[[{"type": "xy"}, {"type": "volume"}]])
+            update_style(fig)
+            
+            fig.add_trace(row=1, col=1, trace=go.Scatter(x=x, y=temp-kelvin, line_color='red', name='Model'))
+            fig.add_trace(row=1, col=1, trace=go.Scatter(x=cx, y=cT-kelvin, mode = 'markers', marker= go.scatter.Marker(color='blue'), name='CFD'))
+            fig.update_xaxes(title_text="Channel Length (m)", row=1, col=1)
+            fig.update_yaxes(title_text="Outlet Temperature (C)", row=1, col=1)
+            
+            
+            fit_data = np.array([cx2,cy,cz]).T
+            interp = LinearNDInterpolator(fit_data, cT)
+            x_ = np.linspace(min(cx2),max(cx2), 100)
+            y_ = np.linspace(min(cy),max(cy), 20)
+            z_ = np.linspace(min(cz),max(cz), 20)
 
-        # CSV
-        content_type, content_string = contents.split(',')
-        decoded = base64.b64decode(content_string)
-        df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
-        df = np.split(df, df[df.isnull().all(1)].index)[0] # split on NaN rows and take first
-        df = df.sort_values(by=['X'])
-        cW = df[df['Density'] < 2.3] #TODO: remove hard-coded Si density
-                                    
-        cW = cW.sort_values(by=['X'])
-        cx = cW['X'] - min(cW['X'])
-        cx *= 0.01 # convert to m
-        
-        cW = cW[cW['X'] < -0.05]# TODO: remove hard-coded range
-        cx2 = cW['X'] - min(cW['X'])
-        cx2 *= 0.01 # convert to m
-        cy = cW['Y']*0.01 # convert to m
-        cz = cW['Z']*0.01 # convert to m
-        cT = cW['Temp']
-        vx = cW['Vx Vel']
-        vy = cW['Vy Vel']
-        vz = cW['Vz Vel']
-        
-        fig = make_subplots(rows=1, cols=2, column_widths=[.33, .66], specs=[[{"type": "xy"}, {"type": "volume"}]])
-        update_style(fig)
-        
-        fig.add_trace(row=1, col=1, trace=go.Scatter(x=x, y=temp-273.15, line_color='red', name='Model'))
-        fig.add_trace(row=1, col=1, trace=go.Scatter(x=cx, y=cT-273.15, line_color='blue', name='CFD'))
-        fig.update_xaxes(title_text="Channel Length (m)", row=1, col=1)
-        fig.update_yaxes(title_text="Outlet Temperature (C)", row=1, col=1)
-        
-        
-        fit_data = np.array([cx2,cy,cz]).T
-        interp = LinearNDInterpolator(fit_data, cT)
-        x_ = np.linspace(min(cx2),max(cx2), 100)
-        y_ = np.linspace(min(cy),max(cy), 20)
-        z_ = np.linspace(min(cz),max(cz), 20)
-
-        x, y, z = np.meshgrid(x_, y_, z_, indexing='ij')
-        cT2 = np.nan_to_num(interp((x, y, z))) - 273.15        
-        fig.add_trace(row=1, col=2, trace=go.Cone(
-                                            x=cx2,
-                                            y=cy,
-                                            z=cz,
-                                            u=vx,
-                                            v=vy,
-                                            w=vz,
-                                            colorscale='YlGnBu',
-                                            sizemode="absolute",
-                                            sizeref=4,
-                                            name='Velocity',
-                                            colorbar={"orientation": "v", "x": 1.1, "yanchor": "middle", "y": 0.5},))
-        
-        fig.add_trace(row=1, col=2, trace=go.Volume(
-                                                x=x.flatten(),
-                                                y=y.flatten(),
-                                                z=z.flatten(),
-                                                value=cT2.flatten(),
-                                                isomin=0,
-                                                isomax=100,
-                                                opacity=0.1, # needs to be small to see through all surfaces
-                                                surface_count=17, # needs to be a large number for good volume rendering
-                                                name='Temperature',
-                                                colorscale='YlOrRd'
-                                                ))
-                                                        
+            x, y, z = np.meshgrid(x_, y_, z_, indexing='ij')
+            cT2 = np.nan_to_num(interp((x, y, z))) - kelvin        
+            fig.add_trace(row=1, col=2, trace=go.Cone(
+                                                x=cx2,
+                                                y=cy,
+                                                z=cz,
+                                                u=vx,
+                                                v=vy,
+                                                w=vz,
+                                                colorscale='YlGnBu',
+                                                sizemode="absolute",
+                                                sizeref=4,
+                                                name='Velocity',
+                                                colorbar={"orientation": "v", "x": 1.1, "yanchor": "middle", "y": 0.5},))
+            
+            fig.add_trace(row=1, col=2, trace=go.Volume(
+                                                    x=x.flatten(),
+                                                    y=y.flatten(),
+                                                    z=z.flatten(),
+                                                    value=cT2.flatten(),
+                                                    isomin=0,
+                                                    isomax=100,
+                                                    opacity=0.1, # needs to be small to see through all surfaces
+                                                    surface_count=17, # needs to be a large number for good volume rendering
+                                                    name='Temperature',
+                                                    colorscale='YlOrRd'
+                                                    ))
+            return fig
+        fig = make_fig(contents)  
         fig.update_layout(yaxis_range=[0,100]) 
         fig.update_layout(legend=dict(
             yanchor="bottom",
             y=0.01,
-            xanchor="left",
+            xanchor="right",
             x=0.01
         ))
         fig.update_layout(height=600)

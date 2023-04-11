@@ -1,36 +1,55 @@
 from dash.exceptions import PreventUpdate
 import torch
-
+kelvin = 273.15
+microscale = 1e-6
 limits = {      
     'L': {
+        'init': 0.01,
         'min': 0.001,
         'max': 0.1,
         'type': float,
+        'scale': 1.0,
+        'shift': 0.0,
     },
     'W': {
+        'init': 100,
         'min': 1,
         'max': 1000,
         'type': float,
+        'scale': microscale,
+        'shift': 0.0,
     },
     'H': {
+        'init': 50,
         'min': 1,
         'max': 100,
         'type': float,
+        'scale': microscale,
+        'shift': 0.0,
     },
     'T_in': {
+        'init': 20,
         'min': 0,
         'max': 25,
         'type': float,
+        'scale': 1.0,
+        'shift': kelvin,
     },
     'T_w': {
+        'init': 100,
         'min': 0,
         'max': 100,
         'type': float,
+        'scale': 1.0,
+        'shift': kelvin,
     },
     'Q': {
+        'init': 100,
         'min': 1,
         'max': 1000,
         'type': float,
+        'scale': 1.0,
+        'shift': 0.0,
     },        
 }
 
@@ -136,7 +155,10 @@ def clamp_variables(opt,old_opt,parameter_choice):
     for var in opt:
         if var in limits:
             if var in parameter_choice:
-                opt[var] = torch.clamp(opt[var], min=limits[var]['min'], max=limits[var]['max'])
+                # print(var)
+                minl = limits[var]['min'] * limits[var]['scale'] + limits[var]['shift']
+                maxl = limits[var]['max'] * limits[var]['scale'] + limits[var]['shift']
+                opt[var] = torch.clamp(opt[var], min=minl, max=maxl)
                 opt[var] = opt[var].detach()
             else:
                 opt[var] = old_opt[var]
