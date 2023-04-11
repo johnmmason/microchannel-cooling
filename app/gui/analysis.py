@@ -170,8 +170,8 @@ def make_naive_anly(server, prefix):
         fig.update_layout(legend=dict(
             yanchor="bottom",
             y=0.01,
-            xanchor="right",
-            x=0.01
+            xanchor="left",
+            x=0.3
         ))
         fig.update_layout(height=600)
         fig.show()
