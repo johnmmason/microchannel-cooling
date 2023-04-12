@@ -23,7 +23,7 @@ class Geometry:
         self.ny = ny
         self.nz = nz
         self.it = 0
-        self.plot_freq = 2000
+        self.nit = nit
 
         # physical parameters
         # time-integration related
