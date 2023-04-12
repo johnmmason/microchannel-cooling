@@ -2,55 +2,12 @@
 import taichi as ti
 from model.limits import limits
 from model.fluids import fluids, Silicon as Si # TODO Si parameters (@longvu)
+from model.lmd_fluid import setup_fluid
+from model.lmd_heat_flux import setup_heat_flux
+from model.lmd_geometry import Geometry
+from model.lmd_heat import setup_heat_resistance
 
-    
-class Geometry:
-    def __init__(self, **kwargs):
-        param = {
-            'L_chip': 0.01464,
-            'W_chip': 0.0168,
-            'H_chip': 0.0001,
-            'L_channel': 0.01464,
-            'W_channel': 500e-6,
-            'H_channel': 50e-6,
-            'n_channel': 30,
-            'nx': 100, # please fill in the rest of the parameters
-        } | kwargs
-               
-               
-                # problem setting
-        self.nx = nx
-        self.ny = ny
-        self.nz = nz
-        self.it = 0
-        self.nit = nit
 
-        # physical parameters
-        # time-integration related
-        self.h = h # time-step size
-        self.substep = substep # number of substeps
-        self.dx = dx # finite difference step size (in space)
-        self.dy = dy
-        self.dz = dz
-        self.nd = 3
-        n2 = self.nx * self.ny * self.nz   
-            
-        # Initialize Geometry - @colenockolds, @longvu, @akhilsadam
-        # Nodal
-        # example here https://github.com/hejob/taichi-fvm2d-fluid-ns/blob/master/multiblocksolver/block_solver.py
-        self.temp = ti.field(ti.f32, shape = n2,) # unrolled to 1-d array
-        self.temp_1 = ti.field(ti.f32, shape = n2,) # unrolled to 1-d array
-        self.update = ti.field(ti.f32, shape = n2,)
-        self.velocity = ti.field(ti.f32, shape = n2,) # from fluid
-        self.k = ti.field(ti.f32, shape = n2,) # from geometry
-        
-        # Resistance / intermediates
-        # Fluid @akhilsadam
-        # self.p = #
-        # self.v = #
-
-        for key, val in param.items():
-            setattr(self, key, val)
 
 class MicroChannelCooler:
 
@@ -73,19 +30,14 @@ class MicroChannelCooler:
         self.heat_flux_function = param['heat_flux_function']
         
         for key, val in param.items():
-            setattr(self, key, val)
-        
-        
-    def setupFluid(self):
-        pass # TODO (@akhilsadam)
-    
-    def setupHeatFlux(self):
-        pass
-    
+            setattr(self, key, val)                   
+                    
     def main(self):
         pass
     
     def solve(self, make_fields=False):
+        
+        self.setup_fluid()
         
         return self.main(**self.geometry.__dict__,
                          **self.fluid.__dict__,
