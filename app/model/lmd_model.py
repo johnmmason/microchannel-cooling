@@ -22,7 +22,9 @@ class MicroChannelCooler:
             'heat_flux_function': lambda x,y,t: 0.0, # TODO (@savannahsmith, please add a more realistic default and work with GUI team to figure out how to pass in a function)
             'Q' : limits['Q']['init'], 
             'geometry' : None,
-            'fluid' : fluids[0]
+            'fluid' : fluids[0],
+            'nit': 100,
+            'update_frequency': 10,
         } | kwargs
         
         assert param['geometry'] is not None, "Geometry must be specified"
@@ -33,7 +35,10 @@ class MicroChannelCooler:
             setattr(self, key, val)                   
                     
     def main(self):
-        pass
+        for i in self.nit:
+            self.step()
+            if i % self.update_freq == 0:
+                self.update()
     
     def solve(self, make_fields=False):
         

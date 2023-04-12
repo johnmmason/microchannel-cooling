@@ -10,16 +10,14 @@ class Geometry:
             'W_channel': 500e-6,
             'H_channel': 50e-6,
             'n_channel': 30,
-            'nx': 100, # please fill in the rest of the parameters
+            'nx': 100, # please fill in the rest of the parameters @colenockolds
         } | kwargs
                
                
-                # problem setting
+        # problem setting
         self.nx = nx
         self.ny = ny
         self.nz = nz
-        self.it = 0
-        self.nit = nit
 
         # physical parameters
         # time-integration related
