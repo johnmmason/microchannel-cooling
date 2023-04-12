@@ -40,7 +40,7 @@ class Geometry:
         self.isfluid = ti.field(ti.i32, shape = nodes,) # TODO @colenockolds
         
         # Resistance / intermediate arrays:
-        self.heat_resist = ti.field(ti.f32, shape = elements,) # unrolled to 1-d array
+        self.heat_resist = ti.field(ti.f32, shape = (elements,self.nd),) # unrolled to 2D array (elements x nd), for x-y-z springs) 
         self.interfaces = ti.field(ti.i32, shape = elements,) # TODO unrolled to 1-d array, solid-solid has value 0, solid-fluid has value 1, fluid-fluid has value 2, @colenockolds
         
         
