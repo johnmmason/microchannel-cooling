@@ -38,3 +38,4 @@ Werkzeug==2.2.3
 zipp==3.15.0
 pandas
 scipy
+taichi
