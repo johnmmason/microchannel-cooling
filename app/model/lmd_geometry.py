@@ -13,6 +13,9 @@ class Geometry:
             'nx': 100, # please fill in the rest of the parameters @colenockolds
         } | kwargs
                
+        
+        for key, val in param.items():
+            setattr(self, key, val)
                
         # problem setting
         self.nx = nx
@@ -47,9 +50,10 @@ class Geometry:
         # Fluid @akhilsadam
         self.pressure = ti.field(ti.f32, shape = nodes,) # from fluid
         self.velocity = ti.field(ti.f32, shape = nodes,) # from fluid
-
-        for key, val in param.items():
-            setattr(self, key, val)
+        
+        self.A_channel = self.W_channel * self.H_channel # cross-sectional area [m^2]
+        self.P_channel = 2 * (self.W_channel + self.H_channel) # perimeter [m]
+        self.D_channel = 4 * self.A_channel / self.P_channel # hydraulic diameter [m]
             
             
         @ti.kernel
