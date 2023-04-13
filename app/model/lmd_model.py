@@ -2,7 +2,7 @@
 import taichi as ti
 from model.limits import limits
 from model.fluids import fluids, Silicon as Si # TODO Si parameters (@longvu)
-from model.lmd_fluid import setup_fluid, calculate_Re, calculate_Nu
+from model.lmd_fluid import setup_fluid_velocity, calculate_Re, calculate_Nu
 from model.lmd_heat_flux import setup_heat_flux
 from model.lmd_geometry import Geometry
 from model.lmd_heat import setup_heat_resistance
@@ -38,20 +38,21 @@ class MicroChannelCooler:
     def main(self):
         
         for i in self.nit:
-            
-            self.calculate_Nu()
-            
+                        
             self.step()
             
             if i % self.update_freq == 0:
-                self.update()
+                calculate_Nu(self.fluid, self.geometry)
+                setup_heat_resistance(self.solid, self.fluid, self.geometry)
     
     
     def solve(self, make_fields=False):
         
-        self.setup_fluid()
+        setup_fluid_velocity(self.geometry)
         
-        self.calculate_Re()
+        calculate_Re(self.fluid, self.geometry)
+        
+        setup_heat_flux(self.heat_flux_function, self.geometry)
         
         return self.main(**self.geometry.__dict__,
                          **self.fluid.__dict__,
