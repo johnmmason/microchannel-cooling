@@ -1,5 +1,6 @@
 import taichi as ti    
 
+@ti.data_oriented
 class Geometry:
     def __init__(self, **kwargs):
         param = {

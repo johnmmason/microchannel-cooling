@@ -1,5 +1,7 @@
 #!/bin/python3
+import taichi as ti
 
+@ti.data_oriented
 class Fluid:
     def __init__(self, **var):
         # Initialize Fluid

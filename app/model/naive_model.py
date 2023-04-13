@@ -8,7 +8,7 @@ def naive_model(T_in, T_w, Q,
                 L, W, H,
                 rho, mu, cp, k, T_boiling_point,
                 latent_heat_of_vaporization,              
-                make_fields=False, N_ELE=1000):
+                make_fields=False, N_ELE=1000, **kwargs):
     # Calculate the heat transfer in a rectangular microchannel with the specified
     # properties using a 1-dimensional enthalpy heat transfer model
     #
