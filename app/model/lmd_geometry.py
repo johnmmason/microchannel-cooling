@@ -50,6 +50,8 @@ class Geometry:
         # Fluid @akhilsadam
         self.pressure = ti.field(ti.f32, shape = nodes,) # from fluid
         self.velocity = ti.field(ti.f32, shape = nodes,) # from fluid
+        self.Re = ti.field(ti.f32, shape = nodes,) # from fluid
+        self.Nu = ti.field(ti.f32, shape = nodes,) # from fluid
         
         self.A_channel = self.W_channel * self.H_channel # cross-sectional area [m^2]
         self.P_channel = 2 * (self.W_channel + self.H_channel) # perimeter [m]
