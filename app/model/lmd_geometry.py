@@ -59,10 +59,14 @@ class Geometry:
         self.D_channel = 4 * self.A_channel / self.P_channel # hydraulic diameter [m]
             
             
-        @ti.kernel
-        def channel_y(i,j,k):
+        @ti.func
+        def channel_y(i:ti.i32): # note i is the unrolled index (so it's a 1D array instead of a 3D array)
             pass # TODO @colenockolds (want local coordinate in channel, with origin at center and normalized ranges [-1/2, 1/2])
         
-        @ti.kernel
-        def channel_z(i,j,k):
+        @ti.func
+        def channel_z(i:ti.i32):
             pass # TODO
+        
+        @ti.func
+        def i_to_xyz(i:ti.i32):
+            pass # TODO @colenockolds (want global position in meters; return ti.Vector or indexable tuple..not sure which works)
