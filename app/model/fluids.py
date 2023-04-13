@@ -12,6 +12,8 @@ class Fluid:
         for key, value in var.items(): # easy way to set attributes
             setattr(self, key, value)
             
+        self.Pr = self.mu * self.cp / self.k # Prandtl number
+            
 water = Fluid(rho = 997, # density of water [kg/m^3]
               mu = 0.00089, # viscosity of water [Pa*s]
               cp = 4180, # heat capacity of water [J/kg*K]
