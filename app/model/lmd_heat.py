@@ -1,6 +1,7 @@
 import taichi as ti
 from model.lmd_resistance_functions import solid_to_solid, solid_to_fluid, fluid_to_fluid
-# only takes in self (for now ) - these functions can be used in a taichi kernel
+# these functions can be used in a taichi kernel
+# args: (self, i1,j1,k1, i2,j2,k2) (the two nodes to calculate the resistance between, note order-independent)
 
 
 @ti.kernel
