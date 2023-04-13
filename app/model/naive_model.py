@@ -54,6 +54,7 @@ def naive_model(T_in, T_w, Q,
     
     BTp = cp * (T_w - T_boiling_point) / latent_heat_of_vaporization # Spalding number
     fT = (1 + BTp)**(-2/3) # Zhuifu model (2013)
+    Nu = Nu_uncor*fT # Nusselt number, correction for Zhuifu model (2013)
 
     f = 64/Re
     dP = ( f * L * rho * (v**2) ) / ( 2 * H ) # pressure loss [Pa]
@@ -67,9 +68,7 @@ def naive_model(T_in, T_w, Q,
     for i in range(1, N_ELE):
 
         T_in_ = T[i-1] # element inlet temperature [K]
-        
-        Nu = Nu_uncor*fT # Nusselt number, correction for Zhuifu model (2013)
-        
+                
         h = Nu * k / D # heat transfer coefficient
         dE = 4 * h * W * dL * (T_w - T_in_) # heat transfer [W]
         T_out = (dE / (rho * Q_SI * cp)) + T_in_ # element outlet temperature [K]
