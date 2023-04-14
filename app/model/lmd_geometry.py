@@ -31,22 +31,26 @@ class Geometry:
         self.dy = dy
         self.dz = dz
         self.nd = 3
-        nodes = self.nx * self.ny * self.nz   
-        elements = (self.nx-1) * (self.ny-1) * (self.nz-1)
+        nodes = (self.nx,self.ny,self.nz)
+          
+        elements = ((self.nx-1),(self.ny-1),(self.nz-1))
             
         # Initialize Geometry - @colenockolds, please fill in the rest of the parameters and make sure they are consistent with the model
         # Cell-centered nodal arrays
         # example here https://github.com/hejob/taichi-fvm2d-fluid-ns/blob/master/multiblocksolver/block_solver.py
-        self.temp = ti.field(ti.f32, shape = nodes,) # unrolled to 1-d array
-        self.temp_next = ti.field(ti.f32, shape = nodes,) # unrolled to 1-d array
-        self.heat_flux = ti.field(ti.f32, shape = nodes,) # unrolled to 1-d array
+        self.temp = ti.field(ti.f32, shape = nodes,) 
+        self.temp_next = ti.field(ti.f32, shape = nodes,)
+        self.heat_flux = ti.field(ti.f32, shape = nodes,)
         self.update = ti.field(ti.f32, shape = nodes,)
         self.isfluid = ti.field(ti.i32, shape = nodes,) # TODO @colenockolds
+        self.volume = ti.field(ti.f32, shape = nodes,) # TODO @colenockolds
+        self.heat_capacity = ti.field(ti.f32, shape = nodes,) # TODO @longvu
         
         # Resistance / intermediate arrays:
-        self.heat_resist = ti.field(ti.f32, shape = (elements,self.nd),) # unrolled to 2D array (elements x nd), for x-y-z springs) 
-        self.interfaces = ti.field(ti.i32, shape = elements,) # TODO unrolled to 1-d array, solid-solid has value 0, solid-fluid has value 1, fluid-fluid has value 2, @colenockolds
-        self.interfaceArea = ti.field(ti.f32, shape = elements,) # TODO unrolled to 1-d array, area of interface between solid and fluid, @colenockolds
+        self.current = ti.field(ti.f32, shape = (*elements,self.nd),) # 4D array (elements x nd), for x-y-z springs) (this is basically dynamic heat flux)
+        self.heat_resist = ti.field(ti.f32, shape = (*elements,self.nd),) # 4D array (elements x nd), for x-y-z springs) 
+        self.interfaces = ti.field(ti.i32, shape = elements,) # TODO  solid-solid has value 0, solid-fluid has value 1, fluid-fluid has value 2, @colenockolds
+        self.interfaceArea = ti.field(ti.f32, shape = elements,) # TODO area of interface between solid and fluid, @colenockolds
         
         
         # Fluid @akhilsadam
@@ -61,13 +65,13 @@ class Geometry:
             
             
         @ti.func
-        def channel_y(i:ti.i32): # note i is the unrolled index (so it's a 1D array instead of a 3D array)
+        def channel_y(i:ti.i32, j:ti.i32, k:ti.i32):
             pass # TODO @colenockolds (want local coordinate in channel, with origin at center and normalized ranges [-1/2, 1/2])
         
         @ti.func
-        def channel_z(i:ti.i32):
+        def channel_z(i:ti.i32, j:ti.i32, k:ti.i32):
             pass # TODO
         
         @ti.func
-        def i_to_xyz(i:ti.i32):
+        def ijk_to_xyz(i:ti.i32, j:ti.i32, k:ti.i32):
             pass # TODO @colenockolds (want global position in meters; return ti.Vector or indexable tuple..not sure which works)
