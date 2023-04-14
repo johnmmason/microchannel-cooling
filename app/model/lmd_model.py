@@ -16,6 +16,19 @@ def calculate_current(geometry):
                     geometry.current[i,j,k,w] = (geometry.temp[i,j,k] - geometry.temp[i+1,j+1,k+1]) / geometry.heat_resistance[i,j,k,w]
 
 @ti.kernel
+def propagate_current(fluid, geometry):
+    for i in range(geometry.nx-1):
+        for j in range(geometry.ny-1):
+            for k in range(geometry.nz-1):
+                for w in range(geometry.nd):
+                    # mdot cp T flow
+                    
+                    dT = geometry.temp[i+1,j+1,k+1] - geometry.temp[i,j,k]
+                    mdot = fluid.rho * geometry.velocity[i,j,k,w] * geometry.interface_area[i,j,k,w]
+                    geometry.current[i,j,k,w] += mdot * fluid.cp * dT
+
+
+@ti.kernel
 def calculate_temperature(geometry):
     for i in range(geometry.nx):
         for j in range(geometry.ny):
@@ -59,9 +72,8 @@ class MicroChannelCooler:
         for i in self.nit:
                         
             calculate_current(self.geometry)
-            propagate_current(self.geometry) # adjust current to account for fluid motion
+            propagate_current(self.fluid,self.geometry) # adjust current to account for fluid motion
             calculate_temperature(self.geometry)
-            self.step()
             
             if i % self.update_freq == 0:
                 calculate_Nu(self.fluid, self.geometry)
