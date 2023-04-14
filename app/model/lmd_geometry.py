@@ -25,8 +25,7 @@ class Geometry:
 
         # physical parameters
         # time-integration related
-        self.h = h # time-step size
-        self.substep = substep # number of substeps
+        self.dt = dt # time-step size
         self.dx = dx # finite difference step size (in space)
         self.dy = dy
         self.dz = dz

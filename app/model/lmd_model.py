@@ -21,11 +21,11 @@ def propagate_current(fluid, geometry):
         for j in range(geometry.ny-1):
             for k in range(geometry.nz-1):
                 for w in range(geometry.nd):
-                    # mdot cp T flow
+                    # m cp T flow
                     
                     dT = geometry.temp[i+1,j+1,k+1] - geometry.temp[i,j,k]
-                    mdot = fluid.rho * geometry.velocity[i,j,k,w] * geometry.interface_area[i,j,k,w]
-                    geometry.current[i,j,k,w] += mdot * fluid.cp * dT
+                    m = fluid.rho * geometry.velocity[i,j,k,w] * geometry.interface_area[i,j,k,w] * geometry.dt
+                    geometry.current[i,j,k,w] += m * fluid.cp * dT
 
 
 @ti.kernel
