@@ -48,7 +48,6 @@ class Geometry:
         self.temp = ti.field(ti.f32, shape = nodes,) 
         self.temp_next = ti.field(ti.f32, shape = nodes,)
         self.heat_flux = ti.field(ti.f32, shape = nodes,)
-        self.update = ti.field(ti.f32, shape = nodes,)
         self.isfluid = ti.field(ti.i32, shape = nodes,) # TODO @colenockolds
         self.volume = ti.field(ti.f32, shape = nodes,) # TODO @colenockolds
         self.heat_capacity = ti.field(ti.f32, shape = nodes,) # TODO @longvu
@@ -57,7 +56,7 @@ class Geometry:
         self.current = ti.field(ti.f32, shape = (*elements2,self.nd), offset=(-1,-1,-1,0)) # 4D array (elements x nd), for x-y-z springs) (this is basically dynamic heat flux)
         self.heat_resist = ti.field(ti.f32, shape = (*elements2,self.nd), offset=(-1,-1,-1,0)) # 4D array (elements x nd), for x-y-z springs) 
         self.interfaces = ti.field(ti.i32, shape = elements2, offset=(-1,-1,-1)) # TODO  solid-solid has value 0, solid-fluid has value 1, fluid-fluid has value 2, @colenockolds
-        self.interfaceArea = ti.field(ti.f32, shape = elements2, offset=(-1,-1,-1)) # TODO area of interface between solid and fluid, @colenockolds
+        self.interface_area = ti.field(ti.f32, shape = elements2, offset=(-1,-1,-1)) # TODO area of interface between solid and fluid, @colenockolds
         
         
         # Fluid @akhilsadam
