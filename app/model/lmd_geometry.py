@@ -4,32 +4,37 @@ import taichi as ti
 class Geometry:
     def __init__(self, **kwargs):
         param = {
-            'L_chip': 0.01464,
-            'W_chip': 0.0168,
-            'H_chip': 0.0001,
-            'L_channel': 0.01464,
-            'W_channel': 500e-6,
-            'H_channel': 50e-6,
+            'L_chip': 0.01464, 'W_chip': 0.0168, 'H_chip': 0.0001,
+            'L_channel': 0.01464, 'W_channel': 500e-6, 'H_channel': 50e-6,
             'n_channel': 30,
-            'nx': 100, # please fill in the rest of the parameters @colenockolds
-        } | kwargs
-               
+            'nx': 100, 'ny': 100, 'nz': 3,
+            'h': 1e-3, 'substep': 1,
+            'dx': 1, 'dy': 1, 'dz': 1
+        } | kwargs       
         
         for key, val in param.items():
             setattr(self, key, val)
+
+        # real world measurements
+        self.L_chip = param['L_chip']
+        self.W_chip = param['W_chip']
+        self.H_chip = param['H_chip']
+        self.L_channel = param['L_channel']
+        self.W_channel = param['W_channel']
+        self.H_channel = param['H_channel']
                
         # problem setting
-        self.nx = nx
-        self.ny = ny
-        self.nz = nz
+        self.nx = param['nx']
+        self.ny = param['ny']
+        self.nz = param['nz']
 
         # physical parameters
         # time-integration related
-        self.h = h # time-step size
-        self.substep = substep # number of substeps
-        self.dx = dx # finite difference step size (in space)
-        self.dy = dy
-        self.dz = dz
+        self.h = param['h'] # time-step size
+        self.substep = param['substep'] # number of substeps
+        self.dx = param['dx'] # finite difference step size (in space)
+        self.dy = param['dy']
+        self.dz = param['dz']
         self.nd = 3
         nodes = (self.nx,self.ny,self.nz)
           
@@ -76,4 +81,8 @@ class Geometry:
         
         @ti.func
         def ijk_to_xyz(i:ti.i32, j:ti.i32, k:ti.i32):
-            pass # TODO @colenockolds (want global position in meters; return ti.Vector or indexable tuple..not sure which works)
+            x = (i / (self.nx - 1)) * self.L_chip
+            y = (j / (self.ny - 1)) * self.W_chip
+            z = (k / (self.ny - 1)) * self.W_chip
+            return ti.Vector([x, y, z]) # TODO @colenockolds (want global position in meters; return ti.Vector or indexable tuple..not sure which works)
+
