@@ -8,7 +8,7 @@ from dash.exceptions import PreventUpdate
 from gui.dash_template import new_app
 from model.naive_model import MicroChannelCooler, Geometry
 from model.fluids import fluids, fluidoptions
-from model.limits import test_input, test_single_input
+from model.limits import test_input, test_single_input, microscale, kelvin, limits
 from config import update_style
 def make_naive_app(server, prefix):
 
@@ -33,13 +33,13 @@ def make_naive_app(server, prefix):
 		        html.Div(["Fluid:",
                     dbc.Select(fluidoptions, placeholder="Water", value = 0, id={'type': 'in', 'name': 'fluid'})],
                    className='input-box'),
-                html.Div(["Length (m):", dbc.Input(id={'type': 'in', 'name': 'L'}, value='0.01', type='number')], className='input-box'),
-                html.Div(["Width (um):", dbc.Input(id={'type': 'in', 'name': 'W'}, value='100',  type='number')], className='input-box'),
-                html.Div(["Depth (um) (start):", dbc.Input(id={'type': 'in', 'name': 'H_from'}, value='10', type='number')], className='input-box'),
-                html.Div(["Depth (um) (end):",   dbc.Input(id={'type': 'in', 'name': 'H_to'}, value='50', type='number')], className='input-box'),
-                html.Div(["Inlet Temperature (C):", dbc.Input(id={'type': 'in', 'name': 'T_in'}, value='20', type='number')], className='input-box'),
-                html.Div(["Wall Temperature (C):",  dbc.Input(id={'type': 'in', 'name': 'T_w'}, value='100', type='number')], className='input-box'),
-                html.Div(["Flow Rate (uL/min):",    dbc.Input(id={'type': 'in', 'name': 'Q'}, value='100', type='number')], className='input-box'),
+                html.Div(["Length (m):", dbc.Input(id={'type': 'in', 'name': 'L'}, value=limits['L']['init'], type='number')], className='input-box'),
+                html.Div(["Width (um):", dbc.Input(id={'type': 'in', 'name': 'W'}, value=limits['W']['init'],  type='number')], className='input-box'),
+                html.Div(["Depth (um) (start):", dbc.Input(id={'type': 'in', 'name': 'H_from'}, value=limits['H']['min'], type='number')], className='input-box'),
+                html.Div(["Depth (um) (end):",   dbc.Input(id={'type': 'in', 'name': 'H_to'}, value=limits['H']['max'], type='number')], className='input-box'),
+                html.Div(["Inlet Temperature (C):", dbc.Input(id={'type': 'in', 'name': 'T_in'}, value=limits['T_in']['init'], type='number')], className='input-box'),
+                html.Div(["Wall Temperature (C):",  dbc.Input(id={'type': 'in', 'name': 'T_w'}, value=limits['T_w']['init'], type='number')], className='input-box'),
+                html.Div(["Flow Rate (uL/min):",    dbc.Input(id={'type': 'in', 'name': 'Q'}, value=limits['Q']['init'], type='number')], className='input-box'),
             ], className='input'),
             html.Div(className='hspace'),
             html.Div([dcc.Graph(id='plot')], className='plot'),
@@ -62,7 +62,7 @@ def make_naive_app(server, prefix):
 
         try:
             L = float(L) # L of microchannel [m]
-            W = float(W) * 1e-6 # W of microchannel [m]
+            W = float(W) * microscale # W of microchannel [m]
             
             try: 
                 F = fluids[int(fluid)]
@@ -70,15 +70,15 @@ def make_naive_app(server, prefix):
                 print(e)
                 F = fluids[0]
 
-            T_in = float(temp_inlet) + 273.15 # temperature of inlet [K]
-            T_w = float(temp_wall) + 273.15 # temperature of wall [K]
+            T_in = float(temp_inlet) + kelvin # temperature of inlet [K]
+            T_w = float(temp_wall) + kelvin # temperature of wall [K]
             Q = float(flow_rate) # flow rate [uL/min]m]
 
             H_low = float(depth_from)
             H_high = float(depth_to)
 
             assert H_low < H_high
-            H = np.arange( H_low, H_high, 1 ) * 1e-6 #depth of microchannel [m]
+            H = np.linspace( H_low, H_high, 500) * microscale #depth of microchannel [m]
         except:
             raise PreventUpdate
 
@@ -87,18 +87,15 @@ def make_naive_app(server, prefix):
         T_out = np.empty( len(H) )
         
         for i in range(len(H)):
-
-            H_ = H[i]
-            
-            geom = Geometry(L, W, H_)
-            cooler = MicroChannelCooler(geom, F, T_in, T_w, Q)
+            geom = Geometry(L, W, H[i])
+            cooler = MicroChannelCooler(T_in, T_w, Q, geom, F)
             q[i], dP[i], T_out[i] = cooler.solve()
 
         fig = make_subplots(rows=1, cols=3, column_widths=[.33, .33, .33])
 
         fig.add_trace(row=1, col=1, trace=go.Scatter(x=H, y=q))
         fig.add_trace(row=1, col=2, trace=go.Scatter(x=H, y=dP*0.000145038))
-        fig.add_trace(row=1, col=3, trace=go.Scatter(x=H, y=T_out-273.15))
+        fig.add_trace(row=1, col=3, trace=go.Scatter(x=H, y=T_out-kelvin))
 
         fig.update_xaxes(title_text="Channel Depth (m)", row=1, col=1)
         fig.update_xaxes(title_text="Channel Depth (m)", row=1, col=2)
@@ -128,8 +125,8 @@ def make_naive_app(server, prefix):
 
         if T_range < 0.01: T_range = 0.01
 
-        T_lower = np.min(T_out) - T_range - 273.15
-        T_upper = np.max(T_out) + T_range - 273.15
+        T_lower = np.min(T_out) - T_range - kelvin
+        T_upper = np.max(T_out) + T_range - kelvin
 
         fig.update_layout(yaxis3 = dict(range=[T_lower, T_upper]))
         

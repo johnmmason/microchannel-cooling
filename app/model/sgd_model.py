@@ -17,18 +17,14 @@ def cancel_opt(inst):
     
 
 def make_variables(in_vars,opt_names):
-    if torch.cuda.is_available():
-        dev = "cuda:0"
-    else:
-        dev = "cpu"
-
+    dev = "cuda:0" if torch.cuda.is_available() else "cpu"
     device = torch.device(dev)
-    
+
     old_var_dict = {}
     var_dict = {}
     for name in opt_names:
         old_var_dict[name] = torch.tensor(in_vars[name], dtype=torch.float32, requires_grad=True, device=device) 
-        var_dict[name] = Variable(torch.tensor(in_vars[name], dtype=torch.float32, device=device), requires_grad=True,)
+        var_dict[name] = Variable(torch.tensor(in_vars[name], dtype=torch.float32, requires_grad=True, device=device), requires_grad=True,)
     return var_dict, old_var_dict
 
 def output(var_dict, loss, err):
@@ -46,13 +42,8 @@ def sgd_model(parameter_choice, optimize_type, progress, learning_rate, num_iter
     Assuming we want to minimize the pressure drop (dP) while maintaining a certain level of heat flux (q). 
 
     Parameters:
-        L (float): Channel length [m]
-        W (float): Channel width [m]
-        H (float): Channel depth [m]
-        rho (float): Fluid density [kg/m^3]
-        mu (float): Fluid dynamic viscosity [Pa*s]
-        cp (float): Fluid specific heat capacity [J/(kg*K)]
-        k (float): Fluid thermal conductivity [W/(m*K)]
+        Geometry parameters, see model.geometry
+        Fluid parameters, see model.fluids
         T_in (float): Fluid inlet temperature [K]
         T_w (float): Fluid wall temperature [K]
         Q (float): Fluid flow rate [uL/min]
@@ -61,9 +52,7 @@ def sgd_model(parameter_choice, optimize_type, progress, learning_rate, num_iter
         
 
     Returns:
-        L (float): optimized length [m]
-        W (float): optimized width [m]
-        H (float): optimized depth [m]
+        Optimized parameters (subset in order of opt_names)
     """
     
     # Step 1: Create PyTorch Variables for the input parameters
@@ -89,7 +78,6 @@ def sgd_model(parameter_choice, optimize_type, progress, learning_rate, num_iter
         # Compute the objective function
         if optimize_type == 'default':
             objective = dP_torch - q_torch
-            # print(objective.item())
         elif optimize_type == 'q':
             objective = -q_torch     # Email Tejawsi about manufacturing constraints s.t. we'll have ranges to clamp on.
         elif optimize_type == 'dP':
@@ -99,6 +87,9 @@ def sgd_model(parameter_choice, optimize_type, progress, learning_rate, num_iter
         else:
             raise ValueError("Invalid optimize_type, must be 'q', 'dP', or 'T_out'")
 
+        # objective += torch.zeros_like(objective, device=objective.device, requires_grad=True) # workaround to prevent loss of gradient function due to detach in clamp_variables
+        # otherwise when all variables are optimized, the gradient function is lost and the optimizer will not work
+        
         # Save the loss / objective value for debugging/plotting
         loss[i] = objective.item()
         if not math.isfinite(loss[i]):
@@ -141,9 +132,8 @@ class SGD_MicroChannelCooler(MicroChannelCooler):
             H (float): optimized depth [m]
             loss (array): loss function over iterations
         '''
-        params = {'L': self.geometry.L, 'W': self.geometry.W, 'H': self.geometry.H,
-                  'rho': self.fluid.rho, 'mu': self.fluid.mu, 'cp': self.fluid.cp, 'k': self.fluid.k,
-                  'T_in': self.T_in, 'T_w': self.T_w, 'Q': self.Q,}
+        params = {'T_in': self.T_in, 'T_w': self.T_w, 'Q': self.Q,
+                  **self.geometry.__dict__, **self.fluid.__dict__,}
         args,loss,err = sgd_model(parameter_choice, optimize_type, progress, learning_rate, num_iterations, **params)
         
         print(err)

@@ -7,7 +7,7 @@ ENV NVIDIA_DRIVER_CAPABILITIES compute,utility
 WORKDIR /app
 
 COPY requirements.txt /app/requirements.txt
-RUN pip3 install -r requirements.txt
+RUN pip3 --no-cache-dir install -r requirements.txt
 
 COPY . /app
 
