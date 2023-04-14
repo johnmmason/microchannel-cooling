@@ -24,7 +24,7 @@ def propagate_current(fluid, geometry):
                     # m cp T flow
                     
                     dT = geometry.temp[i+1,j+1,k+1] - geometry.temp[i,j,k]
-                    m = fluid.rho * geometry.velocity[i,j,k,w] * geometry.interface_area[i,j,k,w] * geometry.dt
+                    m = fluid.rho * geometry.velocity[i,j,k,w] * geometry.interface_area[i,j,k,w] * geometry.h / geometry.substep
                     geometry.current[i,j,k,w] += m * fluid.cp * dT
 
 
@@ -39,7 +39,7 @@ def calculate_temperature(geometry):
                     + geometry.current[i,j,k,1] - geometry.current[i,j-1,k,1] \
                     + geometry.current[i,j,k,2] - geometry.current[i,j,k-1,2]
                 
-                geometry.temp_next[i] = flux / geometry.heat_capacity[i] + geometry.temp[i]
+                geometry.temp_next[i] = (flux * (geometry.h / geometry.substep) / geometry.heat_capacity[i]) + geometry.temp[i]
 
 @ti.kernel
 def commit(geometry):
@@ -64,7 +64,6 @@ class MicroChannelCooler:
             'fluid' : fluids[0],
             'solid': Si,
             'nit': 100,
-            'update_frequency': 10,
         } | kwargs
         
         assert param['geometry'] is not None, "Geometry must be specified"
@@ -80,16 +79,15 @@ class MicroChannelCooler:
         calculate_Re(self.fluid, self.geometry)
         setup_heat_flux(self.heat_flux_function, self.geometry)
         setup_nodal_heat_capacity(self.solid, self.fluid, self.geometry)
-        
-        for i in self.nit:
-            if i % self.update_freq == 0:
-                calculate_Nu(self.fluid, self.geometry)
-                setup_heat_resistance(self.solid, self.fluid, self.geometry)
-                        
-            calculate_current(self.geometry)
-            propagate_current(self.fluid,self.geometry) # adjust current to account for fluid motion
-            calculate_temperature(self.geometry)
-            commit(self.geometry)
+
+        for _ in self.nit:
+            calculate_Nu(self.fluid, self.geometry)
+            setup_heat_resistance(self.solid, self.fluid, self.geometry)
+            for _ in self.geometry.substep:
+                calculate_current(self.geometry)
+                propagate_current(self.fluid,self.geometry) # adjust current to account for fluid motion
+                calculate_temperature(self.geometry)
+                commit(self.geometry)
     
     
     def solve(self, make_fields=False):

@@ -82,6 +82,6 @@ class Geometry:
         def ijk_to_xyz(i:ti.i32, j:ti.i32, k:ti.i32):
             x = (i / (self.nx - 1)) * self.L_chip
             y = (j / (self.ny - 1)) * self.W_chip
-            z = (k / (self.ny - 1)) * self.W_chip
+            z = (k / (self.nz - 1)) * self.H_chip
             return ti.Vector([x, y, z]) # TODO @colenockolds (want global position in meters; return ti.Vector or indexable tuple..not sure which works)
 
