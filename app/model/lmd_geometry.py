@@ -42,7 +42,6 @@ class Geometry:
         self.temp = ti.field(ti.f32, shape = nodes,) 
         self.temp_next = ti.field(ti.f32, shape = nodes,)
         self.heat_flux = ti.field(ti.f32, shape = nodes,)
-        self.update = ti.field(ti.f32, shape = nodes,)
         self.isfluid = ti.field(ti.i32, shape = nodes,) # TODO @colenockolds
         self.volume = ti.field(ti.f32, shape = nodes,) # TODO @colenockolds
         self.heat_capacity = ti.field(ti.f32, shape = nodes,) # TODO @longvu
