@@ -33,7 +33,9 @@ class Geometry:
         self.nd = 3
         nodes = (self.nx,self.ny,self.nz)
           
-        elements = ((self.nx-1),(self.ny-1),(self.nz-1))
+        # elements = ((self.nx-1),(self.ny-1),(self.nz-1))
+        elements2 = (self.nx+1,self.ny+1,self.nz+1) # padded by a zero on each side, note the offset hides a -1, -1 , -1 start index,
+        # this makes looping much easier (see calculate_temperature in lmd_model.py)
             
         # Initialize Geometry - @colenockolds, please fill in the rest of the parameters and make sure they are consistent with the model
         # Cell-centered nodal arrays
@@ -47,15 +49,15 @@ class Geometry:
         self.heat_capacity = ti.field(ti.f32, shape = nodes,) # TODO @longvu
         
         # Resistance / intermediate arrays:
-        self.current = ti.field(ti.f32, shape = (*elements,self.nd),) # 4D array (elements x nd), for x-y-z springs) (this is basically dynamic heat flux)
-        self.heat_resist = ti.field(ti.f32, shape = (*elements,self.nd),) # 4D array (elements x nd), for x-y-z springs) 
-        self.interfaces = ti.field(ti.i32, shape = elements,) # TODO  solid-solid has value 0, solid-fluid has value 1, fluid-fluid has value 2, @colenockolds
-        self.interfaceArea = ti.field(ti.f32, shape = elements,) # TODO area of interface between solid and fluid, @colenockolds
+        self.current = ti.field(ti.f32, shape = (*elements2,self.nd), offset=(-1,-1,-1,0)) # 4D array (elements x nd), for x-y-z springs) (this is basically dynamic heat flux)
+        self.heat_resist = ti.field(ti.f32, shape = (*elements2,self.nd), offset=(-1,-1,-1,0)) # 4D array (elements x nd), for x-y-z springs) 
+        self.interfaces = ti.field(ti.i32, shape = elements2, offset=(-1,-1,-1)) # TODO  solid-solid has value 0, solid-fluid has value 1, fluid-fluid has value 2, @colenockolds
+        self.interfaceArea = ti.field(ti.f32, shape = elements2, offset=(-1,-1,-1)) # TODO area of interface between solid and fluid, @colenockolds
         
         
         # Fluid @akhilsadam
         self.pressure = ti.field(ti.f32, shape = nodes,) # from fluid
-        self.velocity = ti.field(ti.f32, shape = nodes,) # from fluid
+        self.velocity = ti.field(ti.f32, shape = (*nodes,self.nd)) # from fluid
         self.Re = ti.field(ti.f32, shape = nodes,) # from fluid
         self.Nu = ti.field(ti.f32, shape = nodes,) # from fluid
         

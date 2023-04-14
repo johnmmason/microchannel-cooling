@@ -7,7 +7,26 @@ from model.lmd_heat_flux import setup_heat_flux
 from model.lmd_geometry import Geometry
 from model.lmd_heat import setup_heat_resistance
 
+@ti.kernel
+def calculate_current(geometry):
+    for i in range(geometry.nx-1):
+        for j in range(geometry.ny-1):
+            for k in range(geometry.nz-1):
+                for w in range(geometry.nd):
+                    geometry.current[i,j,k,w] = (geometry.temp[i,j,k] - geometry.temp[i+1,j+1,k+1]) / geometry.heat_resistance[i,j,k,w]
 
+@ti.kernel
+def calculate_temperature(geometry):
+    for i in range(geometry.nx):
+        for j in range(geometry.ny):
+            for k in range(geometry.nz):
+               
+                flux = geometry.heat_flux[i,j,k] \
+                    + geometry.current[i,j,k,0] - geometry.current[i-1,j,k,0] \
+                    + geometry.current[i,j,k,1] - geometry.current[i,j-1,k,1] \
+                    + geometry.current[i,j,k,2] - geometry.current[i,j,k-1,2]
+                
+                geometry.temp_next[i] = flux / geometry.heat_capacity[i] + geometry.temp[i]
 
 class MicroChannelCooler:
 
@@ -39,6 +58,9 @@ class MicroChannelCooler:
         
         for i in self.nit:
                         
+            calculate_current(self.geometry)
+            propagate_current(self.geometry) # adjust current to account for fluid motion
+            calculate_temperature(self.geometry)
             self.step()
             
             if i % self.update_freq == 0:
