@@ -105,7 +105,7 @@ class Geometry:
             elif current_location == 1:
             # We are at a solid1 cell
                 Ax = self.s1_s1_x_interface_area
-                self.Az = self.s1_s1_z_interface_area
+                Az = self.s1_s1_z_interface_area
             elif current_location == 2:
             # We are at a solid2 cell
                 Ax = self.s2_s2_x_interface_area
