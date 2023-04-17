@@ -16,7 +16,8 @@ def make_lmd_app(server, prefix):
     app = new_app(server, prefix, centered='center')
     app.title = "Lumped Mass Model"
     app.version = 0.1
-    funct = [Constant, Linear, Gaussian]
+    funct = ['Constant', 'Linear', 'Gaussian']
+    functoptions = [{'label': funct[i], 'value': i} for i in range(len(funct))]
     # don't use H2 - that is reserved for dropdowns in Flask right now
     app.layout = html.Div([
         html.H1("Microchannel Cooling, Lumped Mass Model", className='rh-align'),
@@ -57,7 +58,7 @@ def make_lmd_app(server, prefix):
                           dbc.Input(id={'type': 'in', 'name': 'Q'}, value=limits['Q']['init'], type='number')],
                          className='input-box'),
                 html.Div(["Functions:",
-                          dbc.Select(funct, placeholder="Constant", value=0, id={'type': 'in', 'name': 'funct'})],
+                          dbc.Select(functoptions, placeholder="Constant", value=0, id={'type': 'in', 'name': 'funct'})],
                          className='input-box')
             ], className='input'),
             html.Div(className='hspace'),
