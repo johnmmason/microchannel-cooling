@@ -37,12 +37,14 @@ def hello_world():
 
 # dashapp example
 from gui.naive_app import make_naive_app
-from gui.opt import make_naive_app_opt
-from gui.analysis import make_naive_anly
+from gui.naive_opt import make_naive_app_opt
+from gui.naive_analysis import make_naive_anly
+from gui.lmd_app import make_lmd_app
 with app.app_context():
     app = make_naive_app(app, '/naive/')
     app = make_naive_app_opt(app, '/opt/')
     app = make_naive_anly(app, '/naive/anly/')
+    app = make_lmd_app(app, '/lmd/')
 
 
 if __name__ == '__main__':
