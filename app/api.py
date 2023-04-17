@@ -31,18 +31,19 @@ def hello_world():
        title=title,
        template="main",
        proxy='',
+       singlechannel="/single_channel/",
        filler="",
    ), 404
 
 
 # dashapp example
 from gui.naive_app import make_naive_app
-from gui.opt import make_naive_app_opt
-from gui.analysis import make_naive_anly
+from gui.naive_opt import make_naive_app_opt
+from gui.naive_analysis import make_naive_anly
 with app.app_context():
-    app = make_naive_app(app, '/naive/')
-    app = make_naive_app_opt(app, '/opt/')
-    app = make_naive_anly(app, '/naive/anly/')
+    app = make_naive_app(app, '/single_channel/')
+    app = make_naive_app_opt(app, '/single_channel/opt/')
+    app = make_naive_anly(app, '/single_channel/anly/')
 
 
 if __name__ == '__main__':

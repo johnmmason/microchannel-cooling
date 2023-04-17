@@ -18,11 +18,11 @@ def make_naive_app_opt(server, prefix):
     long_manager = DiskcacheLongCallbackManager(cache)
 
     app = new_app(server, prefix, long_manager, centered='center')
-    app.title = "Naive Model"
+    app.title = "Single Channel Enthalpy Transfer"
     app.version = 0.1
     # don't use H2 - that is reserved for dropdowns in Flask right now
     app.layout = html.Div([
-        html.H1("Microchannel Cooling, Naive Method Optimization", className='rh-align'),
+        html.H1(f"{app.title} Optimization", className='rh-align'),
         html.Div([
             html.Div([
 
