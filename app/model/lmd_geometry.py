@@ -7,7 +7,7 @@ class Geometry:
             'L_chip': 0.01464, 'W_chip': 0.0168, 'H_chip': 0.0001,
             'L_channel': 0.01464, 'W_channel': 500e-6, 'H_channel': 50e-6,
             'n_channel': 30,
-            'nx': 100, 'ny': 100, 'nz': 3,
+            'nx': 100, 'ny': 122, 'nz': 4,
             'h': 1e-3, 'substep': 1,
             'dx': 1, 'dy': 1, 'dz': 1
         } | kwargs       
@@ -37,6 +37,11 @@ class Geometry:
         self.dz = param['dz']
         self.nd = 3
         nodes = (self.nx,self.ny,self.nz)
+
+        self.cell_L = param['L_chip']/self.nx
+        self.cell_H = (param['H_channel']/2)
+        self.solid_cell_W = (param['W_chip'] - 30 * (param['W_channel'])) / (31 * 2)
+        self.liquid_cell_W = (param['W_channel']/2)
           
         # elements = ((self.nx-1),(self.ny-1),(self.nz-1))
         elements2 = (self.nx+1,self.ny+1,self.nz+1) # padded by a zero on each side, note the offset hides a -1, -1 , -1 start index,
@@ -49,15 +54,79 @@ class Geometry:
         self.temp_next = ti.field(ti.f32, shape = nodes,)
         self.heat_flux = ti.field(ti.f32, shape = nodes,)
         self.isfluid = ti.field(ti.i32, shape = nodes,) # TODO @colenockolds
+
+        for y in range(self.ny):
+            if y % 4 > 1:
+                self.isfluid[:,y,1:3] = 0
+                self.isfluid[:,y,0] = 2
+                self.isfluid[:,y,3] = 2
+            else: self.isfluid[:,y,:] = 1
+
         self.volume = ti.field(ti.f32, shape = nodes,) # TODO @colenockolds
+        self.interfaces = ti.field(ti.i32, shape = elements2, offset=(-1,-1,-1)) # TODO  solid-solid has value 0, solid-fluid has value 1, fluid-fluid has value 2, @colenockolds
+        self.interface_area = ti.field(ti.f32, shape = elements2, offset=(-1,-1,-1)) # TODO area of interface between solid and fluid, @colenockolds
+
+        # Volume of each cell designation
+        self.volume_solid_cell_1 = self.cell_L * self.solid_cell_W * self.cell_H
+        self.volume_liquid_cell = self.cell_L * self.liquid_cell_W * self.cell_H 
+        self.volume_solid_cell_2 = self.volume_liquid_cell
+
+        def determine_volume(current_location):
+            if current_location == 0:
+            # We are at a fluid point
+                V = self.volume_liquid_cell
+            elif current_location == 1:
+            # We are at a solid1 cell
+                V = self.volume_solid_cell_1
+            elif current_location == 2:
+            # We are at a solid2 cell
+                V = self.volume_solid_cell_2
+            return V        
+
+        # x-axis interface areas between cells
+        self.s1_s1_x_interface_area = self.cell_H * self.solid_cell_W
+        self.l_l_x_interface_area = self.cell_H * self.liquid_cell_W
+        self.s2_s2_x_interface_area = self.l_l_x_interface_area
+
+        # y-axis interface area between cells
+        self.y_interface_area = self.cell_L * self.cell_H
+
+        # z-axis interface areas between cells
+        self.s1_s1_z_interface_area = self.cell_L * self.solid_cell_W
+        self.l_l_z_interface_area = self.cell_L * self.liquid_cell_W
+        self.s2_s2_z_interface_area = self.l_l_z_interface_area
+
+        def determine_interfaces(current_location):
+            Ay = self.y_interface_area
+            if current_location == 0:
+            # We are at a fluid point
+                Ax = self.l_l_x_interface_area
+                Az = self.l_l_z_interface_area
+            elif current_location == 1:
+            # We are at a solid1 cell
+                Ax = self.s1_s1_x_interface_area
+                self.Az = self.s1_s1_z_interface_area
+            elif current_location == 2:
+            # We are at a solid2 cell
+                Ax = self.s2_s2_x_interface_area
+                Az = self.s2_s2_z_interface_area
+            return Ax, Ay, Az
+
+        for i in range(self.nx):
+            for j in range(self.ny):
+                for k in range(self.nz):
+                    point = self.isfluid[i,j,k]
+                    self.volume[i,j,k] = determine_volume(point)
+                    Ax, Ay, Az = determine_interfaces(point)
+                    self.interface_area[i,j,k,0] = Ax
+                    self.interface_area[i,j,k,1] = Ay
+                    self.interface_area[i,j,k,2] = Az
+
         self.heat_capacity = ti.field(ti.f32, shape = nodes,) # TODO @longvu
         
         # Resistance / intermediate arrays:
         self.current = ti.field(ti.f32, shape = (*elements2,self.nd), offset=(-1,-1,-1,0)) # 4D array (elements x nd), for x-y-z springs) (this is basically dynamic heat flux)
-        self.heat_resist = ti.field(ti.f32, shape = (*elements2,self.nd), offset=(-1,-1,-1,0)) # 4D array (elements x nd), for x-y-z springs) 
-        self.interfaces = ti.field(ti.i32, shape = elements2, offset=(-1,-1,-1)) # TODO  solid-solid has value 0, solid-fluid has value 1, fluid-fluid has value 2, @colenockolds
-        self.interface_area = ti.field(ti.f32, shape = elements2, offset=(-1,-1,-1)) # TODO area of interface between solid and fluid, @colenockolds
-        
+        self.heat_resist = ti.field(ti.f32, shape = (*elements2,self.nd), offset=(-1,-1,-1,0)) # 4D array (elements x nd), for x-y-z springs)
         
         # Fluid @akhilsadam
         self.pressure = ti.field(ti.f32, shape = nodes,) # from fluid
