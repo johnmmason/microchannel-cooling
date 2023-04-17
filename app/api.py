@@ -31,6 +31,8 @@ def hello_world():
        title=title,
        template="main",
        proxy='',
+       straightflow="lmd",
+       singlechannel="single_channel",
        filler="",
    ), 404
 
@@ -41,9 +43,9 @@ from gui.naive_opt import make_naive_app_opt
 from gui.naive_analysis import make_naive_anly
 from gui.lmd_app import make_lmd_app
 with app.app_context():
-    app = make_naive_app(app, '/naive/')
-    app = make_naive_app_opt(app, '/opt/')
-    app = make_naive_anly(app, '/naive/anly/')
+    app = make_naive_app(app, '/single_channel/')
+    app = make_naive_app_opt(app, '/single_channel/opt/')
+    app = make_naive_anly(app, '/single_channel/anly/')
     app = make_lmd_app(app, '/lmd/')
 
 
