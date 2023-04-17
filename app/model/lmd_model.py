@@ -1,7 +1,11 @@
 #!/bin/python3
+if __name__ == '__main__':
+    import sys
+    sys.path.append("..")
+
 import taichi as ti
 from model.limits import limits
-from model.fluids import fluids, Silicon as Si # TODO Si parameters (@longvu)
+from model.fluids import fluids, silicon as si # TODO Si parameters (@longvu)
 from model.lmd_fluid import setup_fluid_velocity, calculate_Re, calculate_Nu
 from model.lmd_heat_flux import setup_heat_flux
 from model.lmd_geometry import Geometry
@@ -62,7 +66,7 @@ class MicroChannelCooler:
             'Q' : limits['Q']['init'], 
             'geometry' : None,
             'fluid' : fluids[0],
-            'solid': Si,
+            'solid': si,
             'nit': 100,
         } | kwargs
         
@@ -97,3 +101,10 @@ class MicroChannelCooler:
         
         # @johnmatthewmason - please output relevant estimates here; I'm not sure what we need to output - esp. re. complete field data for CFD (which will be output if make_fields is True)
 
+if __name__ == '__main__':
+    
+    ti.init()
+    g = Geometry()
+    m = MicroChannelCooler(geometry=g)
+    m.solve()
+    print('lmd_model.py succeeded!')

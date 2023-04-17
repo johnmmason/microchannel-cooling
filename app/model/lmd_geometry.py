@@ -9,7 +9,6 @@ class Geometry:
             'n_channel': 30,
             'nx': 100, 'ny': 122, 'nz': 4,
             'h': 1e-3, 'substep': 1,
-            'dx': 1, 'dy': 1, 'dz': 1
         } | kwargs       
         
         for key, val in param.items():
@@ -32,9 +31,7 @@ class Geometry:
         # time-integration related
         self.h = param['h'] # time-step size
         self.substep = param['substep'] # number of substeps
-        self.dx = param['dx'] # finite difference step size (in space)
-        self.dy = param['dy']
-        self.dz = param['dz']
+
         self.nd = 3
         nodes = (self.nx,self.ny,self.nz)
 
@@ -53,18 +50,11 @@ class Geometry:
         self.temp = ti.field(ti.f32, shape = nodes,) 
         self.temp_next = ti.field(ti.f32, shape = nodes,)
         self.heat_flux = ti.field(ti.f32, shape = nodes,)
-        self.isfluid = ti.field(ti.i32, shape = nodes,) # TODO @colenockolds
-
-        for y in range(self.ny):
-            if y % 4 > 1:
-                self.isfluid[:,y,1:3] = 0
-                self.isfluid[:,y,0] = 2
-                self.isfluid[:,y,3] = 2
-            else: self.isfluid[:,y,:] = 1
+        self.isfluid = ti.field(ti.i32, shape = nodes,)
 
         self.volume = ti.field(ti.f32, shape = nodes,) # TODO @colenockolds
         self.interfaces = ti.field(ti.i32, shape = elements2, offset=(-1,-1,-1)) # TODO  solid-solid has value 0, solid-fluid has value 1, fluid-fluid has value 2, @colenockolds
-        self.interface_area = ti.field(ti.f32, shape = elements2, offset=(-1,-1,-1)) # TODO area of interface between solid and fluid, @colenockolds
+        self.interface_area = ti.field(ti.f32, shape = (*elements2,3), offset=(-1,-1,-1, 0)) # TODO area of interface between solid and fluid, @colenockolds
 
         # Volume of each cell designation
         self.volume_solid_cell_1 = self.cell_L * self.solid_cell_W * self.cell_H
@@ -139,6 +129,19 @@ class Geometry:
         self.D_channel = 4 * self.A_channel / self.P_channel # hydraulic diameter [m]
             
             
+        @ti.kernel
+        def make_isfluid():
+            for x in range(self.nx):
+                for y in range(self.ny):
+                    for z in range(self.nz):
+                        if y % 4 > 1:
+                            self.isfluid[x,y,1] = 0
+                            self.isfluid[x,y,2] = 0
+                            self.isfluid[x,y,0] = 2
+                            self.isfluid[x,y,3] = 2
+                        else: self.isfluid[x,y,z] = 1
+        make_isfluid()
+            
         @ti.func
         def channel_y(i:ti.i32, j:ti.i32, k:ti.i32):
             pass # TODO @colenockolds (want local coordinate in channel, with origin at center and normalized ranges [-1/2, 1/2])
@@ -154,3 +157,8 @@ class Geometry:
             z = (k / (self.nz - 1)) * self.H_chip
             return ti.Vector([x, y, z]) # TODO @colenockolds (want global position in meters; return ti.Vector or indexable tuple..not sure which works)
 
+if __name__ == '__main__':
+    from lmd_geometry import Geometry
+    ti.init()
+    g = Geometry()
+    print('lmd_geometry.py succeeded!')

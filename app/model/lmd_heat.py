@@ -13,11 +13,11 @@ def setup_heat_resistance(solid, fluid, geometry):
         ie, je, ke = i, j, k
 
         if geometry.interfaces[ie, je, ke] == 0:  # Solid-solid interface
-            geometry.heat_resist[i, j, k, w] = solid_to_solid(solid, geometry, i, j, k, i2, j2, k2, ie, je, ke)
+            geometry.heat_resist[i, j, k, w] = solid_to_solid(solid, geometry, i, j, k, i2, j2, k2, ie, je, ke, w)
         elif geometry.interfaces[ie, je, ke] == 1:  # Solid-fluid interface
-            geometry.heat_resist[i, j, k, w] = solid_to_liquid(fluid, geometry, i, j, k, i2, j2, k2, ie, je, ke)
+            geometry.heat_resist[i, j, k, w] = solid_to_liquid(fluid, geometry, i, j, k, i2, j2, k2, ie, je, ke, w)
         elif geometry.interfaces[ie, je, ke] == 2:  # Fluid-fluid interface
-            geometry.heat_resist[i, j, k, w] = liquid_to_liquid(fluid, geometry, i, j, k, i2, j2, k2, ie, je, ke)
+            geometry.heat_resist[i, j, k, w] = liquid_to_liquid(fluid, geometry, i, j, k, i2, j2, k2, ie, je, ke, w)
     
 
 @ti.kernel

@@ -56,6 +56,6 @@ silicon = Fluid(rho = 2329, # density of silicon [kg/m^3]
                 latent_heat_of_vaporization = 0, # latent heat of vaporization of solid silicon [J/kg] (not needed, but to maintain compatibility)
                 ) 
 
-fluids = [water, ethylene_glycol, silicon_dioxide_nanofluid, mineral_oil, silicon]
-fluidnames = ['Water', 'Ethylene Glycol', 'SiO2 Nanofluid', 'Mineral Oil', 'Silicon']
+fluids = [water, ethylene_glycol, silicon_dioxide_nanofluid, mineral_oil]
+fluidnames = ['Water', 'Ethylene Glycol', 'SiO2 Nanofluid', 'Mineral Oil']
 fluidoptions = [{'label': fluidnames[i], 'value': i} for i in range(len(fluids))]
