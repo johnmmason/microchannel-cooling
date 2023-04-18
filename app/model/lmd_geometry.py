@@ -144,11 +144,15 @@ class Geometry:
             
         @ti.func
         def channel_y(i:ti.i32, j:ti.i32, k:ti.i32):
-            pass # TODO @colenockolds (want local coordinate in channel, with origin at center and normalized ranges [-1/2, 1/2])
+            return 0.0 # TODO @colenockolds (want local coordinate in channel, with origin at center and normalized ranges [-1/2, 1/2])
+        
+        self.channel_y = channel_y
         
         @ti.func
         def channel_z(i:ti.i32, j:ti.i32, k:ti.i32):
-            pass # TODO
+            return 0.0 # TODO
+        
+        self.channel_z = channel_z
         
         @ti.func
         def ijk_to_xyz(i:ti.i32, j:ti.i32, k:ti.i32):
@@ -156,6 +160,15 @@ class Geometry:
             y = (j / (self.ny - 1)) * self.W_chip
             z = (k / (self.nz - 1)) * self.H_chip
             return ti.Vector([x, y, z]) # TODO @colenockolds (want global position in meters; return ti.Vector or indexable tuple..not sure which works)
+
+        self.ijk_to_xyz = ijk_to_xyz
+
+    def ijk_to_xyz_host(self,i:ti.i32, j:ti.i32, k:ti.i32):
+        x = (i / (self.nx - 1)) * self.L_chip
+        y = (j / (self.ny - 1)) * self.W_chip
+        z = (k / (self.nz - 1)) * self.H_chip
+        return ti.Vector([x, y, z]) # TODO @colenockolds (want global position in meters; return ti.Vector or indexable tuple..not sure which works)
+
 
 if __name__ == '__main__':
     from lmd_geometry import Geometry

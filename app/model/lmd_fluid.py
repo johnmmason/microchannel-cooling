@@ -2,14 +2,14 @@ import taichi as ti
 
 
 @ti.kernel
-def calculate_Re(fluid, geometry):
+def calculate_Re(fluid: ti.template(), geometry: ti.template()):
     for i in range(geometry.nx):
         for j in range(geometry.ny):
             for k in range(geometry.nz):
-                geometry.Re[i,j,k] = fluid.rho * geometry.velocity[i,j,k] * geometry.D_channel / fluid.mu
+                geometry.Re[i,j,k] = fluid.rho * geometry.velocity[i,j,k,0] * geometry.D_channel / fluid.mu
  
 @ti.kernel # TODO (@akhilsadam) improve to only calculate on edges!
-def calculate_Nu(fluid, geometry):
+def calculate_Nu(fluid: ti.template(), geometry: ti.template()):
     for i in range(geometry.nx):
         for j in range(geometry.ny):
             for k in range(geometry.nz):
@@ -19,8 +19,8 @@ def calculate_Nu(fluid, geometry):
                 geometry.Nu[i,j,k] = Nu_uncor*fT # Nusselt number, correction for Zhuifu model (2013
 
 @ti.kernel
-def setup_fluid_velocity(geometry):
-    ql = geometry.Q / geometry.n_channel * 1e-6 / 60 # [m^3/s]
+def setup_fluid_velocity(Q: ti.f32, geometry: ti.template()):
+    ql = Q / geometry.n_channel * 1e-6 / 60 # [m^3/s]
     v = ql / (geometry.W_channel * geometry.H_channel) 
     for i in range(geometry.nx):
         for j in range(geometry.ny):

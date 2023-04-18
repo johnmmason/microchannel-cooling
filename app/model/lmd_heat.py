@@ -5,7 +5,7 @@ from model.lmd_resistance_functions import solid_to_solid, solid_to_liquid, liqu
 
 
 @ti.kernel
-def setup_heat_resistance(solid, fluid, geometry): 
+def setup_heat_resistance(solid: ti.template(), fluid: ti.template(), geometry: ti.template()): 
     # fill in the heat_resist array from lmd_geometry as in lmd_fluid.py
     # TODO @longvu
     for i, j, k, w in ti.ndrange((geometry.nx-1), (geometry.ny-1), (geometry.nz-1), (geometry.nd)):
@@ -21,7 +21,7 @@ def setup_heat_resistance(solid, fluid, geometry):
     
 
 @ti.kernel
-def setup_nodal_heat_capacity(solid, fluid, geometry):
+def setup_nodal_heat_capacity(solid: ti.template(), fluid: ti.template(), geometry: ti.template()):
     # fill in the nodal_heat_capacity array (so basically m*Cp per node), use the volume field from lmd_geometry
     # TODO @longvu
     for i, j, k in ti.ndrange(geometry.nx, geometry.ny, geometry.nz):
