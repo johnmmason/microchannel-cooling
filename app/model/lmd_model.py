@@ -118,6 +118,6 @@ if __name__ == '__main__':
     pl.open_gif(f"../../../output_3d.gif")   
     data = g.temp.to_numpy().reshape(g.nx,g.ny,g.nz) 
     print(data)
-    pl.add_volume(data, cmap="jet", clim=[273.15,373.15])
+    pl.add_volume(data, cmap="jet", opacity=0.5)
     pl.write_frame()
     pl.close()
