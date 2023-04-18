@@ -62,18 +62,6 @@ class Geometry:
         self.volume_liquid_cell = self.cell_L * self.liquid_cell_W * self.cell_H 
         self.volume_solid_cell_2 = self.volume_liquid_cell
 
-        def determine_volume(current_location):
-            if current_location == 0:
-            # We are at a fluid point
-                V = self.volume_liquid_cell
-            elif current_location == 1:
-            # We are at a solid1 cell
-                V = self.volume_solid_cell_1
-            elif current_location == 2:
-            # We are at a solid2 cell
-                V = self.volume_solid_cell_2
-            return V        
-
         # x-axis interface areas between cells
         self.s1_s1_x_interface_area = self.cell_H * self.solid_cell_W
         self.l_l_x_interface_area = self.cell_H * self.liquid_cell_W
@@ -87,7 +75,41 @@ class Geometry:
         self.l_l_z_interface_area = self.cell_L * self.liquid_cell_W
         self.s2_s2_z_interface_area = self.l_l_z_interface_area
 
-        def determine_interfaces(current_location):
+        def determine_volume(current_location):
+            if current_location == 0:
+            # We are at a fluid point
+                V = self.volume_liquid_cell
+            elif current_location == 1:
+            # We are at a solid1 cell
+                V = self.volume_solid_cell_1
+            elif current_location == 2:
+            # We are at a solid2 cell
+                V = self.volume_solid_cell_2
+            return V        
+        
+        def determine_interface_types(current_location, step_y, step_z):
+            if current_location == 0:
+            # We are at a fluid point
+                Ix = 2
+                if step_y == 0: Iy = 2
+                else: Iy = 1
+                if step_z == 0: Iz = 2
+                else: Iz = 1
+            elif current_location == 1:
+            # We are at a solid1 cell
+                Ix = 0
+                Iz = 0
+                if step_y == 0: Iy = 1
+                else: Iy = 0
+            elif current_location == 2:
+            # We are at a solid2 cell
+                Ix = 0
+                Iy = 0
+                if step_z == 0: Iz = 2
+                else: step_z = 0
+            return Ix, Iy, Iz
+        
+        def determine_interface_areas(current_location):
             Ay = self.y_interface_area
             if current_location == 0:
             # We are at a fluid point
@@ -102,13 +124,19 @@ class Geometry:
                 Ax = self.s2_s2_x_interface_area
                 Az = self.s2_s2_z_interface_area
             return Ax, Ay, Az
-
+        
         for i in range(self.nx):
-            for j in range(self.ny):
+            for j in range(self.nx):
                 for k in range(self.nz):
                     point = self.isfluid[i,j,k]
                     self.volume[i,j,k] = determine_volume(point)
-                    Ax, Ay, Az = determine_interfaces(point)
+                    point_stepy = self.isfluid[i,j+1,k]
+                    point_stepz = self.isfluid[i,j,k+1]
+                    Ix, Iy, Iz = determine_interface_types(point, point_stepy, point_stepz)
+                    self.interfaces[i,j,k,0] = Ix
+                    self.interfaces[i,j,k,1] = Iy
+                    self.interfaces[i,j,k,2] = Iz  
+                    Ax, Ay, Az = determine_interface_areas(point)
                     self.interface_area[i,j,k,0] = Ax
                     self.interface_area[i,j,k,1] = Ay
                     self.interface_area[i,j,k,2] = Az
@@ -157,17 +185,23 @@ class Geometry:
         
         @ti.func
         def ijk_to_xyz(i:ti.i32, j:ti.i32, k:ti.i32):
-            x = (i / (self.nx - 1)) * self.L_chip
-            y = (j / (self.ny - 1)) * self.W_chip
-            z = (k / (self.nz - 1)) * self.H_chip
+            x = i * self.cell_L
+            z = k * self.cell_H
+            if j % 4 == 3: 
+                y = int(j/4) * 2 * (self.solid_cell_W + self.liquid_cell_W) + (2 * self.solid_cell_W + self.liquid_cell_W)
+            else: 
+                y = int(j/4) * 2 * (self.solid_cell_W + self.liquid_cell_W) + (j % 4) * self.solid_cell_W 
             return ti.Vector([x, y, z]) # TODO @colenockolds (want global position in meters; return ti.Vector or indexable tuple..not sure which works)
 
         self.ijk_to_xyz = ijk_to_xyz
 
     def ijk_to_xyz_host(self,i:ti.i32, j:ti.i32, k:ti.i32):
-        x = (i / (self.nx - 1)) * self.L_chip
-        y = (j / (self.ny - 1)) * self.W_chip
-        z = (k / (self.nz - 1)) * self.H_chip
+        x = i * self.cell_L
+        z = k * self.cell_H
+        if j % 4 == 3: 
+            y = int(j/4) * 2 * (self.solid_cell_W + self.liquid_cell_W) + (2 * self.solid_cell_W + self.liquid_cell_W)
+        else: 
+            y = int(j/4) * 2 * (self.solid_cell_W + self.liquid_cell_W) + (j % 4) * self.solid_cell_W 
         return ti.Vector([x, y, z]) # TODO @colenockolds (want global position in meters; return ti.Vector or indexable tuple..not sure which works)
 
 
