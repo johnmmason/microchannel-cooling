@@ -54,7 +54,7 @@ class Geometry:
         self.isfluid = ti.field(ti.i32, shape = nodes,)
 
         self.volume = ti.field(ti.f32, shape = nodes,) # TODO @colenockolds
-        self.interfaces = ti.field(ti.i32, shape = elements2, offset=(-1,-1,-1)) # TODO  solid-solid has value 0, solid-fluid has value 1, fluid-fluid has value 2, @colenockolds
+        self.interfaces = ti.field(ti.i32, shape = (*elements2,3), offset=(-1,-1,-1, 0)) # TODO  solid-solid has value 0, solid-fluid has value 1, fluid-fluid has value 2, @colenockolds
         self.interface_area = ti.field(ti.f32, shape = (*elements2,3), offset=(-1,-1,-1, 0)) # TODO area of interface between solid and fluid, @colenockolds
 
         # Volume of each cell designation

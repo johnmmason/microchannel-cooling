@@ -116,7 +116,10 @@ if __name__ == '__main__':
     import pyvista as pv
     pl = pv.Plotter()
     pl.open_gif(f"../../../output_3d.gif")   
-    data = g.temp.to_numpy().reshape(g.nx,g.ny,g.nz) 
+    # pl.camera.position = (-1.1, -1.5, 0.0)
+    # pl.camera.focal_point = (50.0, 50.0, 0.0)
+    # pl.camera.up = (1.0, 0.0, 1.0)
+    data = g.isfluid.to_numpy().reshape(g.nx,g.ny,g.nz) 
     print(data)
     pl.add_volume(data, cmap="jet", opacity=0.5)
     pl.write_frame()
