@@ -9,7 +9,7 @@ from model.fluids import fluids, silicon as si # TODO Si parameters (@longvu)
 from model.lmd_fluid import setup_fluid_velocity, calculate_Re, calculate_Nu
 from model.lmd_heat_flux import setup_heat_flux
 from model.lmd_geometry import Geometry
-from model.lmd_heat import setup_heat_resistance, setup_nodal_heat_capacity
+from model.lmd_heat import setup_heat_resistance, setup_nodal_heat_capacity, setup_temperature
 from tqdm import tqdm
 
 @ti.kernel
@@ -21,7 +21,7 @@ def calculate_current(geometry: ti.template()):
                     geometry.current[i,j,k,w] = (geometry.temp[i,j,k] - geometry.temp[i+1,j+1,k+1]) / geometry.heat_resist[i,j,k,w]
 
 @ti.kernel
-def propagate_current(fluid: ti.template(), geometry: ti.template()):
+def propagate_current(T_in: ti.f32, fluid: ti.template(), geometry: ti.template()):
     for i in range(geometry.nx-1):
         for j in range(geometry.ny-1):
             for k in range(geometry.nz-1):
@@ -31,6 +31,8 @@ def propagate_current(fluid: ti.template(), geometry: ti.template()):
                     dT = geometry.temp[i+1,j+1,k+1] - geometry.temp[i,j,k]
                     m = fluid.rho * geometry.velocity[i,j,k,w] * geometry.interface_area[i,j,k,w] * geometry.h / geometry.substep
                     geometry.current[i,j,k,w] += m * fluid.cp * dT
+    # inlet and outlet
+
 
 
 @ti.kernel
@@ -63,14 +65,22 @@ class MicroChannelCooler:
         # Q : fluid flow rate [uL/min]
         param = {
             'T_in': limits['T_in']['init'],
-            'heat_flux_function': lambda x,y,z: 0.1, # TODO (@savannahsmith, please add a more realistic default and work with GUI team to figure out how to pass in a function)
+            'heat_flux_function': lambda x,y: 250, # TODO (@savannahsmith, please add a more realistic default and work with GUI team to figure out how to pass in a function)
             'Q' : limits['Q']['init'], 
             'geometry' : None,
             'fluid' : fluids[0],
             'solid': si,
-            'nit': 1,
+            'nit': 5,
         } 
         param.update(kwargs)
+        
+        # unit conversions
+        param['T_in'] += limits['T_in']['shift']
+        param['Q'] *= (15/9)/(10**11) # uL/min -> m^3/s
+        hff = param['heat_flux_function']
+        param['heat_flux_function'] = lambda x,y: hff(x,y) * (10**4) # W/m^2 -> W/cm^2
+        
+        
         
         assert param['geometry'] is not None, "Geometry must be specified"
         
@@ -85,13 +95,14 @@ class MicroChannelCooler:
         calculate_Re(self.fluid, self.geometry)
         setup_heat_flux(self.heat_flux_function, self.geometry)
         setup_nodal_heat_capacity(self.solid, self.fluid, self.geometry)
+        setup_temperature(self.geometry)
 
         for _ in tqdm(range(self.nit)):
             calculate_Nu(self.fluid, self.geometry)
             setup_heat_resistance(self.solid, self.fluid, self.geometry)
             for _ in range(self.geometry.substep):
                 calculate_current(self.geometry)
-                propagate_current(self.fluid,self.geometry) # adjust current to account for fluid motion
+                propagate_current(self.T_in, self.fluid,self.geometry) # adjust current to account for fluid motion
                 calculate_temperature(self.geometry)
                 commit(self.geometry)
     
@@ -119,7 +130,7 @@ if __name__ == '__main__':
     # pl.camera.position = (-1.1, -1.5, 0.0)
     # pl.camera.focal_point = (50.0, 50.0, 0.0)
     # pl.camera.up = (1.0, 0.0, 1.0)
-    data = g.isfluid.to_numpy().reshape(g.nx,g.ny,g.nz) 
+    data = g.temp.to_numpy()[:,:,:].reshape(g.nx,g.ny,g.nz) - 273.15
     print(data)
     pl.add_volume(data, cmap="jet", opacity=0.5)
     pl.write_frame()

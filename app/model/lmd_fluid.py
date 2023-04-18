@@ -27,10 +27,12 @@ def setup_fluid_velocity(Q: ti.f32, geometry: ti.template()):
             for k in range(geometry.nz):
                 # need a better reference:
                 # https://www.researchgate.net/post/What-is-the-velocity-profile-of-laminar-flow-in-a-square-pipe
-                y = geometry.channel_y(i,j,k)
-                z = geometry.channel_z(i,j,k)
-                vc = 32*v*y*(1-y)*z*(1-z) # TODO check this (@akhilsadam)
-                geometry.velocity[i,j,k,0] = vc
+                if geometry.isfluid[i,j,k] == 0:
+                    _,y,z = geometry.channel_x_y_z(i,j,k)
+                    vc = 32*v*y*(1-y)*z*(1-z) # TODO check this (@akhilsadam)
+                    geometry.velocity[i,j,k,0] = vc
+                else:
+                    geometry.velocity[i,j,k,0] = 0.0
                 geometry.velocity[i,j,k,1] = 0.0
                 geometry.velocity[i,j,k,2] = 0.0
                 geometry.pressure[i,j,k] = 0.0 # TODO (@akhilsadam)

@@ -8,7 +8,7 @@ class Geometry:
             'L_channel': 0.01464, 'W_channel': 500e-6, 'H_channel': 50e-6,
             'n_channel': 30,
             'nx': 100, 'ny': 122, 'nz': 4,
-            'h': 1e-3, 'substep': 1,
+            'h': 1e-5, 'substep': 1,
         } 
         param.update(kwargs)
         
@@ -57,6 +57,37 @@ class Geometry:
         self.interfaces = ti.field(ti.i32, shape = (*elements2,3), offset=(-1,-1,-1, 0)) # TODO  solid-solid has value 0, solid-fluid has value 1, fluid-fluid has value 2, @colenockolds
         self.interface_area = ti.field(ti.f32, shape = (*elements2,3), offset=(-1,-1,-1, 0)) # TODO area of interface between solid and fluid, @colenockolds
 
+        self.heat_capacity = ti.field(ti.f32, shape = nodes,) # TODO @longvu
+        
+        # Resistance / intermediate arrays:
+        self.current = ti.field(ti.f32, shape = (*elements2,self.nd), offset=(-1,-1,-1,0)) # 4D array (elements x nd), for x-y-z springs) (this is basically dynamic heat flux)
+        self.heat_resist = ti.field(ti.f32, shape = (*elements2,self.nd), offset=(-1,-1,-1,0)) # 4D array (elements x nd), for x-y-z springs)
+        
+        # Fluid @akhilsadam
+        self.pressure = ti.field(ti.f32, shape = nodes,) # from fluid
+        self.velocity = ti.field(ti.f32, shape = (*nodes,self.nd)) # from fluid
+        self.Re = ti.field(ti.f32, shape = nodes,) # from fluid
+        self.Nu = ti.field(ti.f32, shape = nodes,) # from fluid
+        
+        self.A_channel = self.W_channel * self.H_channel # cross-sectional area [m^2]
+        self.P_channel = 2 * (self.W_channel + self.H_channel) # perimeter [m]
+        self.D_channel = 4 * self.A_channel / self.P_channel # hydraulic diameter [m]
+            
+            
+        @ti.kernel
+        def make_isfluid():
+            for x in range(self.nx):
+                for y in range(self.ny):
+                    for z in range(self.nz):
+                        if y % 4 > 1:
+                            self.isfluid[x,y,1] = 0
+                            self.isfluid[x,y,2] = 0
+                            self.isfluid[x,y,0] = 2
+                            self.isfluid[x,y,3] = 2
+                        else: self.isfluid[x,y,z] = 1
+        make_isfluid()
+        
+        
         # Volume of each cell designation
         self.volume_solid_cell_1 = self.cell_L * self.solid_cell_W * self.cell_H
         self.volume_liquid_cell = self.cell_L * self.liquid_cell_W * self.cell_H 
@@ -106,7 +137,7 @@ class Geometry:
                 Ix = 0
                 Iy = 0
                 if step_z == 0: Iz = 2
-                else: step_z = 0
+                else: Iz = 0
             return Ix, Iy, Iz
         
         def determine_interface_areas(current_location):
@@ -126,7 +157,7 @@ class Geometry:
             return Ax, Ay, Az
         
         for i in range(self.nx):
-            for j in range(self.nx):
+            for j in range(self.ny):
                 for k in range(self.nz):
                     point = self.isfluid[i,j,k]
                     self.volume[i,j,k] = determine_volume(point)
@@ -140,41 +171,12 @@ class Geometry:
                     self.interface_area[i,j,k,0] = Ax
                     self.interface_area[i,j,k,1] = Ay
                     self.interface_area[i,j,k,2] = Az
-
-        self.heat_capacity = ti.field(ti.f32, shape = nodes,) # TODO @longvu
         
-        # Resistance / intermediate arrays:
-        self.current = ti.field(ti.f32, shape = (*elements2,self.nd), offset=(-1,-1,-1,0)) # 4D array (elements x nd), for x-y-z springs) (this is basically dynamic heat flux)
-        self.heat_resist = ti.field(ti.f32, shape = (*elements2,self.nd), offset=(-1,-1,-1,0)) # 4D array (elements x nd), for x-y-z springs)
-        
-        # Fluid @akhilsadam
-        self.pressure = ti.field(ti.f32, shape = nodes,) # from fluid
-        self.velocity = ti.field(ti.f32, shape = (*nodes,self.nd)) # from fluid
-        self.Re = ti.field(ti.f32, shape = nodes,) # from fluid
-        self.Nu = ti.field(ti.f32, shape = nodes,) # from fluid
-        
-        self.A_channel = self.W_channel * self.H_channel # cross-sectional area [m^2]
-        self.P_channel = 2 * (self.W_channel + self.H_channel) # perimeter [m]
-        self.D_channel = 4 * self.A_channel / self.P_channel # hydraulic diameter [m]
-            
-            
-        @ti.kernel
-        def make_isfluid():
-            for x in range(self.nx):
-                for y in range(self.ny):
-                    for z in range(self.nz):
-                        if y % 4 > 1:
-                            self.isfluid[x,y,1] = 0
-                            self.isfluid[x,y,2] = 0
-                            self.isfluid[x,y,0] = 2
-                            self.isfluid[x,y,3] = 2
-                        else: self.isfluid[x,y,z] = 1
-        make_isfluid()
-        
-        #@ti.func
+        @ti.func
         def ijk_to_xyz(i:ti.i32, j:ti.i32, k:ti.i32):
             x = i * self.cell_L
             z = k * self.cell_H
+            y = 0.0
             if j % 4 == 3: 
                 y = int(j/4) * 2 * (self.solid_cell_W + self.liquid_cell_W) + (2 * self.solid_cell_W + self.liquid_cell_W)
             else: 
@@ -185,21 +187,28 @@ class Geometry:
         
         # Channel center lines are on geometry[:, 3 + 4i, 2]
         self.channel_centers = ti.field(ti.f32, shape = (self.nx,self.n_channel,3))
-        for i in range(self.nx):
-            for j in range(self.n_channel):
-                x, y, z = ijk_to_xyz(i, (3+4*j), 2)
-                self.channel_centers[i,j,0] = x
-                self.channel_centers[i,j,1] = y
-                self.channel_centers[i,j,2] = z
-
-        def channel_x_y_z(i,j,k):
-            dist_min = 100000000000
-            x, y, z = ijk_to_xyz(i,j,k)
+        @ti.kernel
+        def make_channel_centers():
             for i in range(self.nx):
                 for j in range(self.n_channel):
-                    cx = self.channel_centers[i,j,0]
-                    cy = self.channel_centers[i,j,1]
-                    cz = self.channel_centers[i,j,2]
+                    x, y, z = ijk_to_xyz(i, (3+4*j), 2)
+                    self.channel_centers[i,j,0] = x
+                    self.channel_centers[i,j,1] = y
+                    self.channel_centers[i,j,2] = z
+        make_channel_centers()
+
+        @ti.func
+        def channel_x_y_z(i,j,k):
+            dist_min = 3.4e38 # max 32-bit float
+            cx_closest = 0.0
+            cy_closest = 0.0
+            cz_closest = 0.0
+            x, y, z = ijk_to_xyz(i,j,k)
+            for m in range(self.nx):
+                for n in range(self.n_channel):
+                    cx = self.channel_centers[m,n,0]
+                    cy = self.channel_centers[m,n,1]
+                    cz = self.channel_centers[m,n,2]
                     dist = ((x - cx)**2 + (y - cy)**2 + (z - cz)**2)**0.5
                     if dist < dist_min:
                         dist_min = dist

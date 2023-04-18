@@ -29,3 +29,8 @@ def setup_nodal_heat_capacity(solid: ti.template(), fluid: ti.template(), geomet
             geometry.heat_capacity[i, j, k] = fluid.rho * fluid.cp * geometry.volume[i, j, k]
         else:  # Solid node
             geometry.heat_capacity[i, j, k] = solid.rho * solid.cp * geometry.volume[i, j, k]
+            
+@ti.kernel
+def setup_temperature(geometry: ti.template()):
+    for i, j, k in ti.ndrange(geometry.nx, geometry.ny, geometry.nz):
+        geometry.temperature[i, j, k] = 293.15  # 20 deg C
