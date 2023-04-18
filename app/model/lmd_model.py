@@ -63,7 +63,7 @@ class MicroChannelCooler:
         # Q : fluid flow rate [uL/min]
         param = {
             'T_in': limits['T_in']['init'],
-            'heat_flux_function': lambda x,y,z: 5.0, # TODO (@savannahsmith, please add a more realistic default and work with GUI team to figure out how to pass in a function)
+            'heat_flux_function': lambda x,y,z: 0.1, # TODO (@savannahsmith, please add a more realistic default and work with GUI team to figure out how to pass in a function)
             'Q' : limits['Q']['init'], 
             'geometry' : None,
             'fluid' : fluids[0],
@@ -101,8 +101,10 @@ class MicroChannelCooler:
         self.main(**self.geometry.__dict__,
                     **self.fluid.__dict__)
         
-        # @johnmatthewmason - please output relevant estimates here; I'm not sure what we need to output - esp. re. complete field data for CFD (which will be output if make_fields is True)
-
+        # Please output relevant estimates here; I'm not sure what we need to output - esp. re. complete field data for CFD (which will be output if make_fields is True)
+        # temp, heat_flux over length / slice along z-axis
+        # maybe a 3D visualization.
+        
 if __name__ == '__main__':
     
     ti.init()
