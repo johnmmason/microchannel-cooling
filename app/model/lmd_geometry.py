@@ -9,7 +9,8 @@ class Geometry:
             'n_channel': 30,
             'nx': 100, 'ny': 122, 'nz': 4,
             'h': 1e-3, 'substep': 1,
-        } | kwargs       
+        } 
+        param.update(kwargs)
         
         for key, val in param.items():
             setattr(self, key, val)
@@ -37,7 +38,7 @@ class Geometry:
 
         self.cell_L = param['L_chip']/self.nx
         self.cell_H = (param['H_channel']/2)
-        self.solid_cell_W = (param['W_chip'] - 30 * (param['W_channel'])) / (31 * 2)
+        self.solid_cell_W = (param['W_chip'] - param['n_channel'] * (param['W_channel'])) / ((param['n_channel'] + 1) * 2)
         self.liquid_cell_W = (param['W_channel']/2)
           
         # elements = ((self.nx-1),(self.ny-1),(self.nz-1))

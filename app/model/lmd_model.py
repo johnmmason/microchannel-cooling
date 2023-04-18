@@ -68,8 +68,9 @@ class MicroChannelCooler:
             'geometry' : None,
             'fluid' : fluids[0],
             'solid': si,
-            'nit': 100,
-        } | kwargs
+            'nit': 1,
+        } 
+        param.update(kwargs)
         
         assert param['geometry'] is not None, "Geometry must be specified"
         
@@ -109,3 +110,12 @@ if __name__ == '__main__':
     m = MicroChannelCooler(geometry=g)
     m.solve()
     print('lmd_model.py succeeded!')
+    
+    import pyvista as pv
+    pl = pv.Plotter()
+    pl.open_gif(f"../../../output_3d.gif")   
+    data = g.temp.to_numpy().reshape(g.nx,g.ny,g.nz) 
+    print(data)
+    pl.add_volume(data, cmap="jet", clim=[273.15,373.15])
+    pl.write_frame()
+    pl.close()
