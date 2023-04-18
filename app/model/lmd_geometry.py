@@ -170,20 +170,8 @@ class Geometry:
                             self.isfluid[x,y,3] = 2
                         else: self.isfluid[x,y,z] = 1
         make_isfluid()
-            
-        @ti.func
-        def channel_y(i:ti.i32, j:ti.i32, k:ti.i32):
-            return 0.0 # TODO @colenockolds (want local coordinate in channel, with origin at center and normalized ranges [-1/2, 1/2])
         
-        self.channel_y = channel_y
-        
-        @ti.func
-        def channel_z(i:ti.i32, j:ti.i32, k:ti.i32):
-            return 0.0 # TODO
-        
-        self.channel_z = channel_z
-        
-        @ti.func
+        #@ti.func
         def ijk_to_xyz(i:ti.i32, j:ti.i32, k:ti.i32):
             x = i * self.cell_L
             z = k * self.cell_H
@@ -192,9 +180,39 @@ class Geometry:
             else: 
                 y = int(j/4) * 2 * (self.solid_cell_W + self.liquid_cell_W) + (j % 4) * self.solid_cell_W 
             return ti.Vector([x, y, z]) # TODO @colenockolds (want global position in meters; return ti.Vector or indexable tuple..not sure which works)
-
+        
         self.ijk_to_xyz = ijk_to_xyz
+        
+        # Channel center lines are on geometry[:, 3 + 4i, 2]
+        self.channel_centers = ti.field(ti.f32, shape = (self.nx,self.n_channel,3))
+        for i in range(self.nx):
+            for j in range(self.n_channel):
+                x, y, z = ijk_to_xyz(i, (3+4*j), 2)
+                self.channel_centers[i,j,0] = x
+                self.channel_centers[i,j,1] = y
+                self.channel_centers[i,j,2] = z
 
+        def channel_x_y_z(i,j,k):
+            dist_min = 100000000000
+            x, y, z = ijk_to_xyz(i,j,k)
+            for i in range(self.nx):
+                for j in range(self.n_channel):
+                    cx = self.channel_centers[i,j,0]
+                    cy = self.channel_centers[i,j,1]
+                    cz = self.channel_centers[i,j,2]
+                    dist = ((x - cx)**2 + (y - cy)**2 + (z - cz)**2)**0.5
+                    if dist < dist_min:
+                        dist_min = dist
+                        cx_closest = cx
+                        cy_closest = cy
+                        cz_closest = cz
+            x = (x - cx_closest) / (2 * self.cell_L) # This should always be 0, I think
+            y = (y - cy_closest) / (2 * self.liquid_cell_W)
+            z = (z - cz_closest) / (2 * self.cell_H)
+            return x, y, z
+        
+        self.channel_x_y_z = channel_x_y_z
+        
     def ijk_to_xyz_host(self,i:ti.i32, j:ti.i32, k:ti.i32):
         x = i * self.cell_L
         z = k * self.cell_H
