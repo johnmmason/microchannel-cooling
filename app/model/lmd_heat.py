@@ -33,4 +33,4 @@ def setup_nodal_heat_capacity(solid: ti.template(), fluid: ti.template(), geomet
 @ti.kernel
 def setup_temperature(geometry: ti.template()):
     for i, j, k in ti.ndrange(geometry.nx, geometry.ny, geometry.nz):
-        geometry.temperature[i, j, k] = 293.15  # 20 deg C
+        geometry.temp[i, j, k] = 293.15  # 20 deg C

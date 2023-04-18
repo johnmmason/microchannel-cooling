@@ -20,7 +20,7 @@ def calculate_Nu(fluid: ti.template(), geometry: ti.template()):
 
 @ti.kernel
 def setup_fluid_velocity(Q: ti.f32, geometry: ti.template()):
-    ql = Q / geometry.n_channel * 1e-6 / 60 # [m^3/s]
+    ql = Q / geometry.n_channel
     v = ql / (geometry.W_channel * geometry.H_channel) 
     for i in range(geometry.nx):
         for j in range(geometry.ny):

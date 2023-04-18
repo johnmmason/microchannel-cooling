@@ -22,16 +22,32 @@ def calculate_current(geometry: ti.template()):
 
 @ti.kernel
 def propagate_current(T_in: ti.f32, fluid: ti.template(), geometry: ti.template()):
+    # inlet
+    for j in range(geometry.ny-1):
+        for k in range(geometry.nz-1):
+            # inlet
+            dT = T_in - geometry.temp[-1,j,k] # (at the inlet, the fluid mixes with the first node, so the temperature is the delta between the inlet and the first node)
+            m = fluid.rho * geometry.velocity[-1,j,k,0] * geometry.interface_area[-1,j,k,0] * geometry.h / geometry.substep
+            geometry.current[-1,j,k,0] += m * fluid.cp * dT
+            
     for i in range(geometry.nx-1):
         for j in range(geometry.ny-1):
             for k in range(geometry.nz-1):
                 for w in range(geometry.nd):
                     # m cp T flow
-                    
                     dT = geometry.temp[i+1,j+1,k+1] - geometry.temp[i,j,k]
                     m = fluid.rho * geometry.velocity[i,j,k,w] * geometry.interface_area[i,j,k,w] * geometry.h / geometry.substep
                     geometry.current[i,j,k,w] += m * fluid.cp * dT
-    # inlet and outlet
+    # outlet
+    lnx = geometry.nx-1
+    for j in range(geometry.ny-1):
+        for k in range(geometry.nz-1):
+            dT = geometry.temp[geometry.nx-1,j,k] # (at the outlet, the temperature is the same as the last node, since we don't care about exit heat balance...)
+            m = fluid.rho * geometry.velocity[lnx,j,k,0] * geometry.interface_area[lnx,j,k,0] * geometry.h / geometry.substep
+            geometry.current[lnx,j,k,0] += m * fluid.cp * dT
+            
+            
+    
 
 
 
@@ -53,7 +69,7 @@ def commit(geometry: ti.template()):
     for i in range(geometry.nx):
         for j in range(geometry.ny):
             for k in range(geometry.nz):
-                geometry.temp[i,j,k] = geometry.temp_next[i,j,k]
+                geometry.temp[i,j,k] = ti.min(ti.max(geometry.temp_next[i,j,k],273.15),373.15)
 
 class MicroChannelCooler:
 
@@ -65,18 +81,18 @@ class MicroChannelCooler:
         # Q : fluid flow rate [uL/min]
         param = {
             'T_in': limits['T_in']['init'],
-            'heat_flux_function': lambda x,y: 250, # TODO (@savannahsmith, please add a more realistic default and work with GUI team to figure out how to pass in a function)
+            'heat_flux_function': lambda x,y: 0.250, # TODO (@savannahsmith, please add a more realistic default and work with GUI team to figure out how to pass in a function)
             'Q' : limits['Q']['init'], 
             'geometry' : None,
             'fluid' : fluids[0],
             'solid': si,
-            'nit': 5,
+            'nit': 100,
         } 
         param.update(kwargs)
         
         # unit conversions
         param['T_in'] += limits['T_in']['shift']
-        param['Q'] *= (15/9)/(10**11) # uL/min -> m^3/s
+        param['Q'] *= (15/9)/(10**8) # uL/min -> m^3/s
         hff = param['heat_flux_function']
         param['heat_flux_function'] = lambda x,y: hff(x,y) * (10**4) # W/m^2 -> W/cm^2
         
@@ -118,20 +134,56 @@ class MicroChannelCooler:
         
 if __name__ == '__main__':
     
-    ti.init()
+    ti.init(ti.cpu, kernel_profiler=False)
     g = Geometry()
     m = MicroChannelCooler(geometry=g)
     m.solve()
     print('lmd_model.py succeeded!')
+    # ti.profiler.print_kernel_profiler_info()
     
-    import pyvista as pv
-    pl = pv.Plotter()
-    pl.open_gif(f"../../../output_3d.gif")   
-    # pl.camera.position = (-1.1, -1.5, 0.0)
-    # pl.camera.focal_point = (50.0, 50.0, 0.0)
-    # pl.camera.up = (1.0, 0.0, 1.0)
-    data = g.temp.to_numpy()[:,:,:].reshape(g.nx,g.ny,g.nz) - 273.15
-    print(data)
-    pl.add_volume(data, cmap="jet", opacity=0.5)
-    pl.write_frame()
-    pl.close()
+    window = ti.ui.Window("Lumped Mass Model", (768, 768))
+    canvas = window.get_canvas()
+    scene = ti.ui.Scene()
+    camera = ti.ui.Camera()
+    camera.position(5, 2, 2)
+    
+    particles_pos = ti.Vector.field(3, dtype=ti.f32, shape=(g.nx*g.ny*g.nz))
+    c = ti.Vector.field(3, dtype=ti.f32, shape=(g.nx*g.ny*g.nz))
+    
+    @ti.kernel
+    def make_pos(f:ti.template(),c:ti.template(),g:ti.template(),item:ti.template(),tmin:ti.f32, trange:ti.f32):
+        for i in range(g.nx):
+            for j in range(g.ny):
+                for k in range(g.nz):
+                    x,y,z = g.ijk_to_xyz(i, j, k)
+                    f[i*g.ny*g.nz + j*g.nz +k] = ti.Vector([x*1000,y*1000,z*1000])
+                    t = float(item[i,j,k]) - tmin
+                    t /= trange
+                    b = 1 - t
+                    c[i*g.ny*g.nz + j*g.nz +k] = ti.Vector([t,.5,b])
+                    
+    make_pos(particles_pos,c,g,g.temp,273.15,100)   
+    # make_pos(particles_pos,c,g,g.heat_flux,0.0,0.0125) # clamping out everything above 0.0125
+    # make_pos(particles_pos,c,g,g.isfluid,0,3.0)    
+    while window.running:
+        camera.track_user_inputs(window, movement_speed=0.03, hold_key=ti.ui.RMB)
+        scene.set_camera(camera)
+        scene.ambient_light((0.8, 0.8, 0.8))
+        scene.point_light(pos=(0.5, 1.5, 1.5), color=(1, 1, 1))
+
+        scene.particles(particles_pos, per_vertex_color=c, radius = 0.01)
+        # Draw 3d-lines in the scene
+        canvas.scene(scene)
+        window.show()
+    
+    # import pyvista as pv
+    # pl = pv.Plotter()
+    # pl.open_gif(f"../../../output_3d.gif")   
+    # # pl.camera.position = (-1.1, -1.5, 0.0)
+    # # pl.camera.focal_point = (50.0, 50.0, 0.0)
+    # # pl.camera.up = (1.0, 0.0, 1.0)
+    # data = g.temp.to_numpy()[:,:,:].reshape(g.nx,g.ny,g.nz) - 273.15
+    # print(data)
+    # pl.add_volume(data, cmap="jet", opacity=0.5)
+    # pl.write_frame()
+    # pl.close()

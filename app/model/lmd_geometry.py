@@ -2,18 +2,18 @@ import taichi as ti
 
 @ti.data_oriented
 class Geometry:
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs):  # sourcery skip: assign-if-exp
         param = {
             'L_chip': 0.01464, 'W_chip': 0.0168, 'H_chip': 0.0001,
             'L_channel': 0.01464, 'W_channel': 500e-6, 'H_channel': 50e-6,
             'n_channel': 30,
-            'nx': 100, 'ny': 122, 'nz': 4,
+            'nx': 100, 'ny_channel': 8, 'ny_wall': 1, 'nz_channel': 2, 'nz_wall': 1,
             'h': 1e-5, 'substep': 1,
         } 
         param.update(kwargs)
         
-        for key, val in param.items():
-            setattr(self, key, val)
+        # for key, val in param.items():
+        #     setattr(self, key, val)
 
         # real world measurements
         self.L_chip = param['L_chip']
@@ -22,11 +22,12 @@ class Geometry:
         self.L_channel = param['L_channel']
         self.W_channel = param['W_channel']
         self.H_channel = param['H_channel']
+        self.n_channel = param['n_channel']
                
         # problem setting
         self.nx = param['nx']
-        self.ny = param['ny']
-        self.nz = param['nz']
+        self.ny = (param['ny_channel'] + param['ny_wall'] * 2) * (param['n_channel'])
+        self.nz = (param['nz_channel'] + param['nz_wall'] * 2)
 
         # physical parameters
         # time-integration related
@@ -37,9 +38,26 @@ class Geometry:
         nodes = (self.nx,self.ny,self.nz)
 
         self.cell_L = param['L_chip']/self.nx
-        self.cell_H = (param['H_channel']/2)
-        self.solid_cell_W = (param['W_chip'] - param['n_channel'] * (param['W_channel'])) / ((param['n_channel'] + 1) * 2)
-        self.liquid_cell_W = (param['W_channel']/2)
+        self.solid_cell_H = (param['H_chip'] -  param['H_channel']) / (2 * param['nz_wall'])
+        self.liquid_cell_H = (param['H_channel']/param['nz_channel'])
+        self.solid_cell_W = (param['W_chip'] - (param['n_channel'] * param['W_channel'])) / (param['n_channel'] * 2 * param['ny_wall'])
+        self.liquid_cell_W = (param['W_channel']/param['ny_channel'])
+        
+        self.unit_width_real = self.W_chip / param['n_channel']
+        self.unit_w_wall_real = self.solid_cell_W * param['ny_wall']
+        self.unit_width =  (param['ny_channel'] + param['ny_wall'] * 2)
+        self.unit_w_left = param['ny_wall']
+        self.unit_w_right = param['ny_wall'] + param['ny_channel']
+        self.unit_w_lr = param['ny_channel']
+        
+        self.unit_height_real = self.H_chip
+        self.unit_h_wall_real = self.solid_cell_H * param['nz_wall']
+        self.unit_height = (param['nz_channel'] + param['nz_wall'] * 2)
+        self.unit_h_bottom = param['nz_wall']
+        self.unit_h_top = param['nz_wall'] + param['nz_channel']
+        self.unit_h_tb = param['nz_channel']
+        
+        
           
         # elements = ((self.nx-1),(self.ny-1),(self.nz-1))
         elements2 = (self.nx+1,self.ny+1,self.nz+1) # padded by a zero on each side, note the offset hides a -1, -1 , -1 start index,
@@ -78,35 +96,48 @@ class Geometry:
         def make_isfluid():
             for x in range(self.nx):
                 for y in range(self.ny):
+                    y0 = y % self.unit_width
                     for z in range(self.nz):
-                        if y % 4 > 1:
-                            self.isfluid[x,y,1] = 0
-                            self.isfluid[x,y,2] = 0
-                            self.isfluid[x,y,0] = 2
-                            self.isfluid[x,y,3] = 2
-                        else: self.isfluid[x,y,z] = 1
+                        if y0 >= self.unit_w_left and y0 < self.unit_w_right:
+                            if z % self.unit_height >= self.unit_h_bottom and z % self.unit_height < self.unit_h_top:
+                                self.isfluid[x,y,z] = 0 #fluid
+                            else:
+                                self.isfluid[x,y,z] = 3 #solid at bottom or top
+                        elif z % self.unit_height >= self.unit_h_bottom and z % self.unit_height < self.unit_h_top:
+                            self.isfluid[x,y,z] = 2
+                        else:
+                            self.isfluid[x,y,z] = 1
         make_isfluid()
-        
-        
+        #-------------- # a side view (yz) of the chip (0 is a liquid cell, rest are solid cells)
+        # | 1 | 3 | 1 |
+        #--------------
+        # | 2 | 0 | 2 |
+        #--------------
+        # | 1 | 3 | 1 |
+        #--------------
         # Volume of each cell designation
-        self.volume_solid_cell_1 = self.cell_L * self.solid_cell_W * self.cell_H
-        self.volume_liquid_cell = self.cell_L * self.liquid_cell_W * self.cell_H 
-        self.volume_solid_cell_2 = self.volume_liquid_cell
-
+        self.volume_solid_cell_1 = self.cell_L * self.solid_cell_W * self.solid_cell_H
+        self.volume_solid_cell_2 = self.cell_L * self.solid_cell_W * self.liquid_cell_H
+        self.volume_solid_cell_3 = self.cell_L * self.liquid_cell_W * self.solid_cell_H
+        self.volume_liquid_cell = self.cell_L * self.liquid_cell_W * self.liquid_cell_H 
+        
         # x-axis interface areas between cells
-        self.s1_s1_x_interface_area = self.cell_H * self.solid_cell_W
-        self.l_l_x_interface_area = self.cell_H * self.liquid_cell_W
-        self.s2_s2_x_interface_area = self.l_l_x_interface_area
+        self.s1_s1_x_interface_area = self.solid_cell_H * self.solid_cell_W
+        self.l_l_x_interface_area = self.liquid_cell_H * self.liquid_cell_W
+        self.s2_s2_x_interface_area = self.liquid_cell_H * self.solid_cell_W
+        self.s3_s3_x_interface_area = self.solid_cell_H * self.liquid_cell_W
 
         # y-axis interface area between cells
-        self.y_interface_area = self.cell_L * self.cell_H
+        self.sy_interface_area = self.cell_L * self.solid_cell_H # same for 1,3
+        self.ly_interface_area = self.cell_L * self.liquid_cell_H # same for 0,2
 
         # z-axis interface areas between cells
-        self.s1_s1_z_interface_area = self.cell_L * self.solid_cell_W
-        self.l_l_z_interface_area = self.cell_L * self.liquid_cell_W
-        self.s2_s2_z_interface_area = self.l_l_z_interface_area
+        self.sz_interface_area = self.cell_L * self.solid_cell_W # same for 1,2
+        self.lz_interface_area = self.cell_L * self.liquid_cell_W # same for 0,3
 
+        @ti.func
         def determine_volume(current_location):
+            V = 0.0
             if current_location == 0:
             # We are at a fluid point
                 V = self.volume_liquid_cell
@@ -116,121 +147,175 @@ class Geometry:
             elif current_location == 2:
             # We are at a solid2 cell
                 V = self.volume_solid_cell_2
+            elif current_location == 3:
+                V = self.volume_solid_cell_3
             return V        
         
+        @ti.func
         def determine_interface_types(current_location, step_y, step_z):
+            Ix = 0
+            Iy = 0
+            Iz = 0
             if current_location == 0:
             # We are at a fluid point
                 Ix = 2
-                if step_y == 0: Iy = 2
+                if step_y == 0: Iy = 2 # 2 means liquid-liquid
                 else: Iy = 1
                 if step_z == 0: Iz = 2
                 else: Iz = 1
-            elif current_location == 1:
-            # We are at a solid1 cell
+            else:
+            # We are at a solid cell
                 Ix = 0
-                Iz = 0
-                if step_y == 0: Iy = 1
+                if step_y == 0: Iy = 1 # 1 means solid-liquid
+                else: Iy = 0 # 0 means solid-solid
+                if step_z == 0: Iz = 1
                 else: Iy = 0
-            elif current_location == 2:
-            # We are at a solid2 cell
-                Ix = 0
-                Iy = 0
-                if step_z == 0: Iz = 2
-                else: Iz = 0
             return Ix, Iy, Iz
         
+        @ti.func
         def determine_interface_areas(current_location):
-            Ay = self.y_interface_area
+            Ax = 0.0
+            Ay = 0.0
+            Az = 0.0
             if current_location == 0:
             # We are at a fluid point
                 Ax = self.l_l_x_interface_area
-                Az = self.l_l_z_interface_area
+                Ay = self.ly_interface_area
+                Az = self.lz_interface_area
             elif current_location == 1:
             # We are at a solid1 cell
                 Ax = self.s1_s1_x_interface_area
-                Az = self.s1_s1_z_interface_area
+                Ay = self.sy_interface_area
+                Az = self.sz_interface_area
             elif current_location == 2:
             # We are at a solid2 cell
                 Ax = self.s2_s2_x_interface_area
-                Az = self.s2_s2_z_interface_area
+                Ay = self.ly_interface_area
+                Az = self.sz_interface_area
+            else:
+            # We are at a solid3 cell
+                Ax = self.s3_s3_x_interface_area
+                Ay = self.sy_interface_area
+                Az = self.lz_interface_area
             return Ax, Ay, Az
         
-        for i in range(self.nx):
-            for j in range(self.ny):
-                for k in range(self.nz):
-                    point = self.isfluid[i,j,k]
-                    self.volume[i,j,k] = determine_volume(point)
-                    point_stepy = self.isfluid[i,j+1,k]
-                    point_stepz = self.isfluid[i,j,k+1]
-                    Ix, Iy, Iz = determine_interface_types(point, point_stepy, point_stepz)
-                    self.interfaces[i,j,k,0] = Ix
-                    self.interfaces[i,j,k,1] = Iy
-                    self.interfaces[i,j,k,2] = Iz  
-                    Ax, Ay, Az = determine_interface_areas(point)
-                    self.interface_area[i,j,k,0] = Ax
-                    self.interface_area[i,j,k,1] = Ay
-                    self.interface_area[i,j,k,2] = Az
+        @ti.kernel
+        def make_materials():
+            for i in range(self.nx):
+                for j in range(self.ny):
+                    for k in range(self.nz):
+                        point = self.isfluid[i,j,k]
+                        self.volume[i,j,k] = determine_volume(point)
+                        point_stepy = self.isfluid[i,j+1,k]
+                        point_stepz = self.isfluid[i,j,k+1]
+                        Ix, Iy, Iz = determine_interface_types(point, point_stepy, point_stepz)
+                        self.interfaces[i,j,k,0] = Ix
+                        self.interfaces[i,j,k,1] = Iy
+                        self.interfaces[i,j,k,2] = Iz  
+                        Ax, Ay, Az = determine_interface_areas(point)
+                        self.interface_area[i,j,k,0] = Ax
+                        self.interface_area[i,j,k,1] = Ay
+                        self.interface_area[i,j,k,2] = Az
+        make_materials()
         
         @ti.func
-        def ijk_to_xyz(i:ti.i32, j:ti.i32, k:ti.i32):
+        def ijk_to_xyz(i:ti.i32, j:ti.i32, k:ti.i32): # TODO consolidate ifs to min/max or vice versa
             x = i * self.cell_L
-            z = k * self.cell_H
-            y = 0.0
-            if j % 4 == 3: 
-                y = int(j/4) * 2 * (self.solid_cell_W + self.liquid_cell_W) + (2 * self.solid_cell_W + self.liquid_cell_W)
-            else: 
-                y = int(j/4) * 2 * (self.solid_cell_W + self.liquid_cell_W) + (j % 4) * self.solid_cell_W 
-            return ti.Vector([x, y, z]) # TODO @colenockolds (want global position in meters; return ti.Vector or indexable tuple..not sure which works)
         
+            j0 = j % self.unit_width
+            nj = int(j / self.unit_width)
+            k0 = k % self.unit_height
+            
+            yshift = 0.0
+            if j0 < self.unit_w_left:
+                yshift = 0.5*self.solid_cell_W
+            elif j0 < self.unit_w_right:
+                yshift = 0.5*self.liquid_cell_W
+            else:
+                yshift = 0.5*self.solid_cell_W
+            
+            zshift = 0.0
+            if k0 < self.unit_h_bottom:
+                zshift = 0.5*self.solid_cell_H
+            elif k0 < self.unit_h_top:
+                zshift = 0.5*self.liquid_cell_H
+            else:
+                zshift = 0.5*self.solid_cell_H
+            
+            y = nj * self.unit_width_real \
+                + ti.min(j0,self.unit_w_left)*self.solid_cell_W \
+                + ti.min(ti.max(j0-self.unit_w_left,0),self.unit_w_lr)*self.liquid_cell_W \
+                + ti.max(j0-self.unit_w_right,0)*self.solid_cell_W \
+                + yshift    
+                
+            z = ti.min(k0,self.unit_h_bottom)*self.solid_cell_H \
+                + ti.min(ti.max(k0-self.unit_h_bottom,0),self.unit_h_tb)*self.liquid_cell_H \
+                + ti.max(k0-self.unit_h_top,0)*self.solid_cell_H \
+                + zshift
+                
+            return x, y, z
+                
+
         self.ijk_to_xyz = ijk_to_xyz
         
-        # Channel center lines are on geometry[:, 3 + 4i, 2]
-        self.channel_centers = ti.field(ti.f32, shape = (self.nx,self.n_channel,3))
-        @ti.kernel
-        def make_channel_centers():
-            for i in range(self.nx):
-                for j in range(self.n_channel):
-                    x, y, z = ijk_to_xyz(i, (3+4*j), 2)
-                    self.channel_centers[i,j,0] = x
-                    self.channel_centers[i,j,1] = y
-                    self.channel_centers[i,j,2] = z
-        make_channel_centers()
+        # # Channel center lines are on geometry[:, 3 + 4i, 2]
+        # self.channel_centers = ti.field(ti.f32, shape = (self.nx,self.n_channel,3))
+        # @ti.kernel
+        # def make_channel_centers():
+        #     for i in range(self.nx):
+        #         for j in range(self.n_channel):
+        #             x, y, z = ijk_to_xyz(i, (3+4*j), 2)
+        #             self.channel_centers[i,j,0] = x
+        #             self.channel_centers[i,j,1] = y
+        #             self.channel_centers[i,j,2] = z
+        # make_channel_centers()
 
         @ti.func
         def channel_x_y_z(i,j,k):
-            dist_min = 3.4e38 # max 32-bit float
-            cx_closest = 0.0
-            cy_closest = 0.0
-            cz_closest = 0.0
-            x, y, z = ijk_to_xyz(i,j,k)
-            for m in range(self.nx):
-                for n in range(self.n_channel):
-                    cx = self.channel_centers[m,n,0]
-                    cy = self.channel_centers[m,n,1]
-                    cz = self.channel_centers[m,n,2]
-                    dist = ((x - cx)**2 + (y - cy)**2 + (z - cz)**2)**0.5
-                    if dist < dist_min:
-                        dist_min = dist
-                        cx_closest = cx
-                        cy_closest = cy
-                        cz_closest = cz
-            x = (x - cx_closest) / (2 * self.cell_L) # This should always be 0, I think
-            y = (y - cy_closest) / (2 * self.liquid_cell_W)
-            z = (z - cz_closest) / (2 * self.cell_H)
+            # dist_min = 3.4e38 # max 32-bit float
+            # cx_closest = 0.0
+            # cy_closest = 0.0
+            # cz_closest = 0.0
+            # x, y, z = ijk_to_xyz(i,j,k)
+            # for m in range(self.nx):
+            #     for n in range(self.n_channel):
+            #         cx = self.channel_centers[m,n,0]
+            #         cy = self.channel_centers[m,n,1]
+            #         cz = self.channel_centers[m,n,2]
+            #         dist = ((x - cx)**2 + (y - cy)**2 + (z - cz)**2)**0.5
+            #         if dist < dist_min:
+            #             dist_min = dist
+            #             cx_closest = cx
+            #             cy_closest = cy
+            #             cz_closest = cz
+                       
+            # x = (x - cx_closest) / (2 * self.cell_L) # This should always be 0, I think (I favor returning the exact value, so the channel center is on the inlet)
+            # y = (y - cy_closest) / (2 * self.liquid_cell_W)
+            # z = (z - cz_closest) / (2 * self.cell_H)
+            
+                        
+            # faster method
+            
+            
+            rx, ry, rz = ijk_to_xyz(i,j,k)
+            x = rx / self.L_channel
+            z = ((rz - self.unit_h_wall_real) / self.H_channel) - 0.5
+            ry = ry % self.unit_width_real
+            y = ((ry - self.unit_w_wall_real) / self.W_channel) - 0.5
             return x, y, z
         
         self.channel_x_y_z = channel_x_y_z
         
-    def ijk_to_xyz_host(self,i:ti.i32, j:ti.i32, k:ti.i32):
+    def ijk_to_xyz_host(self,i, j, k):
         x = i * self.cell_L
-        z = k * self.cell_H
-        if j % 4 == 3: 
-            y = int(j/4) * 2 * (self.solid_cell_W + self.liquid_cell_W) + (2 * self.solid_cell_W + self.liquid_cell_W)
-        else: 
-            y = int(j/4) * 2 * (self.solid_cell_W + self.liquid_cell_W) + (j % 4) * self.solid_cell_W 
-        return ti.Vector([x, y, z]) # TODO @colenockolds (want global position in meters; return ti.Vector or indexable tuple..not sure which works)
-
+    
+        j0 = j % self.unit_width
+        nj = int(j / self.unit_width)
+        k0 = k % self.unit_height
+        
+        y = nj * self.unit_width_real + min(j0,self.unit_w_left)*self.solid_cell_W + min(max(j0-self.unit_w_left,0),self.unit_w_lr)*self.liquid_cell_W + max(j0-self.unit_w_right,0)*self.solid_cell_W
+        z = min(k0,self.unit_h_bottom)*self.solid_cell_H + min(max(k0-self.unit_h_bottom,0),self.unit_h_tb)*self.liquid_cell_H + max(k0-self.unit_h_top,0)*self.solid_cell_H
+        return x, y, z
 
 if __name__ == '__main__':
     from lmd_geometry import Geometry
