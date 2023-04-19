@@ -20,14 +20,6 @@ def make_naive_app(server, prefix):
         html.H1(app.title, className='rh-align'),
         html.Div([
             html.Div([
-                #html.Div(["Choose a parameter to optimize:",
-                #    dcc.RadioItems([
-                #                 {'label': 'Length', 'value': 'L'},
-                #                 {'label': 'Width', 'value': 'W'},
-                #                 {'label': 'Depth', 'value': 'depth'},
-                #                 {'label': 'No Optimization', 'value': 'no'},
-                #                 ], value = 'no', id = 'opt')],
-                #   ),
                 html.Div(id='err'),
                 html.Br(),
 		        html.Div(["Fluid:",

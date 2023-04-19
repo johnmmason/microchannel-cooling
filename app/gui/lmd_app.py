@@ -21,14 +21,6 @@ def make_lmd_app(server, prefix):
         html.H1("Microchannel Cooling, Lumped Mass Model", className='rh-align'),
         html.Div([
             html.Div([
-                # html.Div(["Choose a parameter to optimize:",
-                #    dcc.RadioItems([
-                #                 {'label': 'Length', 'value': 'L'},
-                #                 {'label': 'Width', 'value': 'W'},
-                #                 {'label': 'Depth', 'value': 'depth'},
-                #                 {'label': 'No Optimization', 'value': 'no'},
-                #                 ], value = 'no', id = 'opt')],
-                #   ),
                 html.Div(id='err'),
                 html.Br(),
                 html.Div(["Fluid:",
@@ -55,9 +47,12 @@ def make_lmd_app(server, prefix):
                 html.Div(["Flow Rate (uL/min):",
                           dbc.Input(id={'type': 'in', 'name': 'Q'}, value=limits['Q']['init'], type='number')],
                          className='input-box'),
+                html.Div(["Amplitude (W/cm^2):",
+                          dbc.Input(id={'type': 'in', 'name': 'A'}, value=limits['A']['init'], type='number')],
+                         className='input-box'),
                 html.Div(["Functions:",
                           dbc.Select(functoptions, placeholder="Constant", value=0, id={'type': 'in', 'name': 'funct'})],
-                         className='input-box')
+                         className='input-box'),                
             ], className='input'),
             html.Div(className='hspace'),
             html.Div([dcc.Graph(id='plot')], className='plot'),
@@ -65,124 +60,137 @@ def make_lmd_app(server, prefix):
         html.Div(id='cancel_button_id', style={'display': 'none'}),  # workaround for dash errors.
     ])
 
-    # @app.callback(
-    #     Output(component_id='plot', component_property='figure'),
-    #     Input({'type': 'in', 'name': 'fluid'}, 'value'),
-    #     Input({'type': 'in', 'name': 'L'}, 'value'),
-    #     Input({'type': 'in', 'name': 'W'}, 'value'),
-    #     Input({'type': 'in', 'name': 'H_from'}, 'value'),
-    #     Input({'type': 'in', 'name': 'H_to'}, 'value'),
-    #     Input({'type': 'in', 'name': 'T_in'}, 'value'),
-    #     Input({'type': 'in', 'name': 'T_w'}, 'value'),
-    #     Input({'type': 'in', 'name': 'Q'}, 'value')
-    # )
-    # def update_output_div(fluid, L, W, depth_from, depth_to, temp_inlet, temp_wall, flow_rate):
+    @app.callback(
+         Output(component_id='plot', component_property='figure'),
+         Input({'type': 'in', 'name': 'fluid'}, 'value'),
+         Input({'type': 'in', 'name': 'L'}, 'value'),
+         Input({'type': 'in', 'name': 'W'}, 'value'),
+         Input({'type': 'in', 'name': 'H_from'}, 'value'),
+         Input({'type': 'in', 'name': 'H_to'}, 'value'),
+         Input({'type': 'in', 'name': 'T_in'}, 'value'),
+         Input({'type': 'in', 'name': 'T_w'}, 'value'),
+         Input({'type': 'in', 'name': 'Q'}, 'value'),
+         Input({'type': 'in', 'name': 'A'}, 'value'),
+         Input({'type': 'in', 'name': 'funct'}, 'value'),
+    )
+    def update_output_div(fluid, L, W, depth_from, depth_to, temp_inlet, temp_wall, flow_rate, funct):
 
-    #     try:
-    #         L = float(L)  # L of microchannel [m]
-    #         W = float(W) * microscale  # W of microchannel [m]
+        try:
+            L = float(L)  # L of microchannel [m]
+            W = float(W) * microscale  # W of microchannel [m]
 
-    #         try:
-    #             F = fluids[int(fluid)]
-    #         except Exception as e:
-    #             print(e)
-    #             F = fluids[0]
+            try:
+                F = fluids[int(fluid)]
+            except Exception as e:
+                print(e)
+                F = fluids[0]
 
-    #         T_in = float(temp_inlet) + kelvin  # temperature of inlet [K]
-    #         T_w = float(temp_wall) + kelvin  # temperature of wall [K]
-    #         Q = float(flow_rate)  # flow rate [uL/min]m]
+            T_in = float(temp_inlet) + kelvin  # temperature of inlet [K]
+            T_w = float(temp_wall) + kelvin  # temperature of wall [K]
+            Q = float(flow_rate)  # flow rate [uL/min]m]
 
-    #         H_low = float(depth_from)
-    #         H_high = float(depth_to)
+            H_low = float(depth_from)
+            H_high = float(depth_to)
 
-    #         assert H_low < H_high
-    #         H = np.linspace(H_low, H_high, 500) * microscale  # depth of microchannel [m]
-    #     except:
-    #         raise PreventUpdate
+            assert H_low < H_high
+            H = np.linspace(H_low, H_high, 500) * microscale  # depth of microchannel [m]
+        except:
+            raise PreventUpdate
 
-    #     q = np.empty(len(H))
-    #     dP = np.empty(len(H))
-    #     T_out = np.empty(len(H))
+        q = np.empty(len(H))
+        dP = np.empty(len(H))
+        T_out = np.empty(len(H))
 
-    #     for i in range(len(H)):
-    #         geom = Geometry(L, W, H[i])
-    #         cooler = MicroChannelCooler(T_in, T_w, Q, geom, F)
-    #         q[i], dP[i], T_out[i] = cooler.solve()
+        if funct == "Constant":
+            heat_flux_functions = lambda x,y: 5.0
+        
+        elif funct == "Linear":
+            heat_flux_functions = lambda x: 5.0*x
+        
+        elif funct == "Gaussian":
+            heat_flux_functions = lambda x: gaussian(1., 0.5, 0.5, 1., 1.)
+        
 
-    #     fig = make_subplots(rows=1, cols=3, column_widths=[.33, .33, .33])
+        for i in range(len(H)):
+            geom = Geometry(L, W, H[i])
+            cooler = MicroChannelCooler(T_in, T_w, Q, geom, F)
+            q[i], dP[i], T_out[i] = cooler.solve()
 
-    #     fig.add_trace(row=1, col=1, trace=go.Scatter(x=H, y=q))
-    #     fig.add_trace(row=1, col=2, trace=go.Scatter(x=H, y=dP * 0.000145038))
-    #     fig.add_trace(row=1, col=3, trace=go.Scatter(x=H, y=T_out - kelvin))
+        fig = make_subplots(rows=1, cols=3, column_widths=[.33, .33, .33])
 
-    #     fig.update_xaxes(title_text="Channel Depth (m)", row=1, col=1)
-    #     fig.update_xaxes(title_text="Channel Depth (m)", row=1, col=2)
-    #     fig.update_xaxes(title_text="Channel Depth (m)", row=1, col=3)
-    #     fig.update_yaxes(title_text="Heat Flux (W/cm2)", row=1, col=1)
-    #     fig.update_yaxes(title_text="Backpressure (psi)", row=1, col=2)
-    #     fig.update_yaxes(title_text="Outlet Temperature (C)", row=1, col=3)
+        fig.add_trace(row=1, col=1, trace=go.Scatter(x=H, y=q))
+        fig.add_trace(row=1, col=2, trace=go.Scatter(x=H, y=dP * 0.000145038))
+        fig.add_trace(row=1, col=3, trace=go.Scatter(x=H, y=T_out - kelvin))
 
-    #     RANGE_CONSTANT = 0.1
+        fig.update_xaxes(title_text="Channel Depth (m)", row=1, col=1)
+        fig.update_xaxes(title_text="Channel Depth (m)", row=1, col=2)
+        fig.update_xaxes(title_text="Channel Depth (m)", row=1, col=3)
+        fig.update_yaxes(title_text="Heat Flux (W/cm2)", row=1, col=1)
+        fig.update_yaxes(title_text="Backpressure (psi)", row=1, col=2)
+        fig.update_yaxes(title_text="Outlet Temperature (C)", row=1, col=3)
 
-    #     # Fix for extremely small variations in heat flux
+        RANGE_CONSTANT = 0.1
 
-    #     q_range = (np.max(q) - np.min(q)) * RANGE_CONSTANT
+        # Fix for extremely small variations in heat flux
 
-    #     if q_range < 0.001: q_range = 0.01
+        q_range = (np.max(q) - np.min(q)) * RANGE_CONSTANT
 
-    #     q_lower = np.min(q) - q_range
-    #     q_upper = np.max(q) + q_range
+        if q_range < 0.001: q_range = 0.01
 
-    #     fig.update_layout(yaxis1=dict(range=[q_lower, q_upper]))
+        q_lower = np.min(q) - q_range
+        q_upper = np.max(q) + q_range
 
-    #     # Fix for extremely small variations in outlet temperature
+        fig.update_layout(yaxis1=dict(range=[q_lower, q_upper]))
 
-    #     T_range = (np.max(T_out) - np.min(T_out)) * RANGE_CONSTANT
+        # Fix for extremely small variations in outlet temperature
 
-    #     if T_range < 0.01: T_range = 0.01
+        T_range = (np.max(T_out) - np.min(T_out)) * RANGE_CONSTANT
 
-    #     T_lower = np.min(T_out) - T_range - kelvin
-    #     T_upper = np.max(T_out) + T_range - kelvin
+        if T_range < 0.01: T_range = 0.01
 
-    #     fig.update_layout(yaxis3=dict(range=[T_lower, T_upper]))
+        T_lower = np.min(T_out) - T_range - kelvin
+        T_upper = np.max(T_out) + T_range - kelvin
 
-    #     fig.update_layout(height=600, showlegend=False)
-    #     update_style(fig)
+        fig.update_layout(yaxis3=dict(range=[T_lower, T_upper]))
 
-    #     return fig
+        fig.update_layout(height=600, showlegend=False)
+        update_style(fig)
 
-    # @app.callback(
-    #     Output('err', 'children'),
-    #     inputs=dict(
-    #         fluid=Input({'type': 'in', 'name': 'fluid'}, 'value'),
-    #         L=Input({'type': 'in', 'name': 'L'}, 'value'),
-    #         W=Input({'type': 'in', 'name': 'W'}, 'value'),
-    #         H_from=Input({'type': 'in', 'name': 'H_from'}, 'value'),
-    #         H_to=Input({'type': 'in', 'name': 'H_to'}, 'value'),
-    #         T_in=Input({'type': 'in', 'name': 'T_in'}, 'value'),
-    #         T_w=Input({'type': 'in', 'name': 'T_w'}, 'value'),
-    #         Q=Input({'type': 'in', 'name': 'Q'}, 'value')
-    #     )
-    # )
-    # def update_warning_div(**kwargs):
-    #     # need to follow optimization convention
-    #     errs, block, severity = test_input(kwargs)
-    #     print(errs)
-    #     if len(errs) > 0:
+        return fig
 
-    #         div_contents = [
-    #             'The following parameters may be invalid:',
-    #             html.Br(), html.Br()
-    #         ]
+    @app.callback(
+        Output('err', 'children'),
+        inputs=dict(
+            fluid=Input({'type': 'in', 'name': 'fluid'}, 'value'),
+            L=Input({'type': 'in', 'name': 'L'}, 'value'),
+            W=Input({'type': 'in', 'name': 'W'}, 'value'),
+            H_from=Input({'type': 'in', 'name': 'H_from'}, 'value'),
+            H_to=Input({'type': 'in', 'name': 'H_to'}, 'value'),
+            T_in=Input({'type': 'in', 'name': 'T_in'}, 'value'),
+            T_w=Input({'type': 'in', 'name': 'T_w'}, 'value'),
+            Q=Input({'type': 'in', 'name': 'Q'}, 'value'),
+            A=Input({'type': 'in', 'name': 'A'}, 'value')
+        )
+    )
+    def update_warning_div(**kwargs):
+        # need to follow optimization convention
+        errs, block, severity = test_input(kwargs)
+        print(errs)
+        if len(errs) > 0:
 
-    #         for e in errs:
-    #             div_contents.append(e)
-    #             div_contents.append(html.Br())
+            div_contents = [
+                'The following parameters may be invalid:',
+                html.Br(), html.Br()
+            ]
 
-    #         return html.Div(div_contents)
+            for e in errs:
+                div_contents.append(e)
+                div_contents.append(html.Br())
 
-    #     else:
-    #         return ""
+            return html.div(div_contents)
+
+        else:
+            return ""
 
     @app.callback(
         Output({'type': 'in', 'name': MATCH}, 'valid'),
@@ -197,3 +205,7 @@ def make_lmd_app(server, prefix):
         return (a, block, value)  #
 
     return app.server
+
+    def gaussian(height, center_x, center_y, width_x, width_y):
+    return lambda x,y: height*np.exp(
+                -(((center_x-x)/width_x)**2+((center_y-y)/width_y)**2)/2)
