@@ -6,7 +6,7 @@ def calculate_Re(fluid: ti.template(), geometry: ti.template()):
     for i in range(geometry.nx):
         for j in range(geometry.ny):
             for k in range(geometry.nz):
-                geometry.Re[i,j,k] = fluid.rho * geometry.velocity[i,j,k,0] * geometry.D_channel / fluid.mu
+                geometry.Re[i,j,k] = fluid.rho * ti.abs(geometry.velocity[i,j,k,0]) * geometry.D_channel / fluid.mu
  
 @ti.kernel # TODO (@akhilsadam) improve to only calculate on edges!
 def calculate_Nu(fluid: ti.template(), geometry: ti.template()):
@@ -29,6 +29,8 @@ def setup_fluid_velocity(Q: ti.f32, geometry: ti.template()):
                 # https://www.researchgate.net/post/What-is-the-velocity-profile-of-laminar-flow-in-a-square-pipe
                 if geometry.isfluid[i,j,k] == 0:
                     _,y,z = geometry.channel_x_y_z(i,j,k)
+                    y = y + 0.5
+                    z = z + 0.5
                     vc = 32*v*y*(1-y)*z*(1-z) # TODO check this (@akhilsadam)
                     geometry.velocity[i,j,k,0] = vc
                 else:

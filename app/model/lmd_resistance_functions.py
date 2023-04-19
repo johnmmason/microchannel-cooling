@@ -4,14 +4,19 @@ import taichi as ti
 
 @ti.func
 def solid_to_liquid(fluid: ti.template(), geometry: ti.template(),
-                    i1:ti.i32,j1:ti.i32,k1:ti.i32,i2:ti.i32,j2:ti.i32,k2:ti.i32,ie:ti.i32,je:ti.i32,ke:ti.i32,we:ti.i32):
+                    i1:ti.i32,j1:ti.i32,k1:ti.i32,i2:ti.i32,j2:ti.i32,k2:ti.i32,ie:ti.i32,je:ti.i32,ke:ti.i32,we:ti.i32, sl_bit:ti.i32):
     # Efficient Microchannel Cooling of Multiple Power Devices with Compact Flow Distribution for High Power-Density Converters : Remco van Erp, et al. 2019
     # R_conv = 1/(h*A), (A is contact area between solid and liquid)
     # R_int, R_j-c are negligible (as in paper)
     # h = Nu * k / D 
     
     # one of Nu should be 0 / low since that is the solid side
-    Nu = ti.max(geometry.Nu[i1,j1,k1], geometry.Nu[i2,j2,k2])
+    Nu = 0.0
+    if sl_bit == 0:
+        Nu = geometry.Nu[i1,j1,k1]
+    else:
+        Nu = geometry.Nu[i2,j2,k2]
+            
     h = Nu * fluid.k / geometry.D_channel
     A = geometry.interface_area[ie,je,ke,we]
     return 1/(h*A)

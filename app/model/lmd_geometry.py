@@ -8,7 +8,7 @@ class Geometry:
             'L_channel': 0.01464, 'W_channel': 500e-6, 'H_channel': 50e-6,
             'n_channel': 30,
             'nx': 100, 'ny_channel': 8, 'ny_wall': 1, 'nz_channel': 2, 'nz_wall': 1,
-            'h': 1e-5, 'substep': 1,
+            'h': 1e-6, 'substep': 1,
         } 
         param.update(kwargs)
         
@@ -36,6 +36,14 @@ class Geometry:
 
         self.nd = 3
         nodes = (self.nx,self.ny,self.nz)
+        # elements = ((self.nx-1),(self.ny-1),(self.nz-1))
+        elements2 = (self.nx+1,self.ny+1,self.nz+1) # padded by a zero on each side, note the offset hides a -1, -1 , -1 start index,
+        # this makes looping much easier (see calculate_temperature in lmd_model.py)
+        
+        @ti.kernel
+        def zero_init(x: ti.template()):
+            for i in ti.grouped(x):
+                x[i] = 0.0
 
         self.cell_L = param['L_chip']/self.nx
         self.solid_cell_H = (param['H_chip'] -  param['H_channel']) / (2 * param['nz_wall'])
@@ -56,12 +64,6 @@ class Geometry:
         self.unit_h_bottom = param['nz_wall']
         self.unit_h_top = param['nz_wall'] + param['nz_channel']
         self.unit_h_tb = param['nz_channel']
-        
-        
-          
-        # elements = ((self.nx-1),(self.ny-1),(self.nz-1))
-        elements2 = (self.nx+1,self.ny+1,self.nz+1) # padded by a zero on each side, note the offset hides a -1, -1 , -1 start index,
-        # this makes looping much easier (see calculate_temperature in lmd_model.py)
             
         # Initialize Geometry - @colenockolds, please fill in the rest of the parameters and make sure they are consistent with the model
         # Cell-centered nodal arrays
@@ -72,14 +74,17 @@ class Geometry:
         self.isfluid = ti.field(ti.i32, shape = nodes,)
 
         self.volume = ti.field(ti.f32, shape = nodes,) # TODO @colenockolds
-        self.interfaces = ti.field(ti.i32, shape = (*elements2,3), offset=(-1,-1,-1, 0)) # TODO  solid-solid has value 0, solid-fluid has value 1, fluid-fluid has value 2, @colenockolds
-        self.interface_area = ti.field(ti.f32, shape = (*elements2,3), offset=(-1,-1,-1, 0)) # TODO area of interface between solid and fluid, @colenockolds
+        self.interfaces = ti.field(ti.i32, shape = (*elements2,self.nd), offset=(-1,-1,-1, 0)) # TODO  solid-solid has value 0, solid-fluid has value 1, fluid-fluid has value 2, @colenockolds
+        self.interface_area = ti.field(ti.f32, shape = (*elements2,self.nd), offset=(-1,-1,-1, 0)) # TODO area of interface between solid and fluid, @colenockolds
 
         self.heat_capacity = ti.field(ti.f32, shape = nodes,) # TODO @longvu
         
         # Resistance / intermediate arrays:
         self.current = ti.field(ti.f32, shape = (*elements2,self.nd), offset=(-1,-1,-1,0)) # 4D array (elements x nd), for x-y-z springs) (this is basically dynamic heat flux)
         self.heat_resist = ti.field(ti.f32, shape = (*elements2,self.nd), offset=(-1,-1,-1,0)) # 4D array (elements x nd), for x-y-z springs)
+        
+        zero_init(self.heat_resist)
+        zero_init(self.current)
         
         # Fluid @akhilsadam
         self.pressure = ti.field(ti.f32, shape = nodes,) # from fluid
@@ -206,16 +211,17 @@ class Geometry:
                     for k in range(self.nz):
                         point = self.isfluid[i,j,k]
                         self.volume[i,j,k] = determine_volume(point)
-                        point_stepy = self.isfluid[i,j+1,k]
-                        point_stepz = self.isfluid[i,j,k+1]
-                        Ix, Iy, Iz = determine_interface_types(point, point_stepy, point_stepz)
-                        self.interfaces[i,j,k,0] = Ix
-                        self.interfaces[i,j,k,1] = Iy
-                        self.interfaces[i,j,k,2] = Iz  
-                        Ax, Ay, Az = determine_interface_areas(point)
-                        self.interface_area[i,j,k,0] = Ax
-                        self.interface_area[i,j,k,1] = Ay
-                        self.interface_area[i,j,k,2] = Az
+                        if j < self.ny-1 and k < self.nz-1:
+                            point_stepy = self.isfluid[i,j+1,k]
+                            point_stepz = self.isfluid[i,j,k+1]
+                            Ix, Iy, Iz = determine_interface_types(point, point_stepy, point_stepz)
+                            self.interfaces[i,j,k,0] = Ix
+                            self.interfaces[i,j,k,1] = Iy
+                            self.interfaces[i,j,k,2] = Iz  
+                            Ax, Ay, Az = determine_interface_areas(point)
+                            self.interface_area[i,j,k,0] = Ax
+                            self.interface_area[i,j,k,1] = Ay
+                            self.interface_area[i,j,k,2] = Az
         make_materials()
         
         @ti.func
@@ -257,46 +263,9 @@ class Geometry:
                 
 
         self.ijk_to_xyz = ijk_to_xyz
-        
-        # # Channel center lines are on geometry[:, 3 + 4i, 2]
-        # self.channel_centers = ti.field(ti.f32, shape = (self.nx,self.n_channel,3))
-        # @ti.kernel
-        # def make_channel_centers():
-        #     for i in range(self.nx):
-        #         for j in range(self.n_channel):
-        #             x, y, z = ijk_to_xyz(i, (3+4*j), 2)
-        #             self.channel_centers[i,j,0] = x
-        #             self.channel_centers[i,j,1] = y
-        #             self.channel_centers[i,j,2] = z
-        # make_channel_centers()
 
         @ti.func
-        def channel_x_y_z(i,j,k):
-            # dist_min = 3.4e38 # max 32-bit float
-            # cx_closest = 0.0
-            # cy_closest = 0.0
-            # cz_closest = 0.0
-            # x, y, z = ijk_to_xyz(i,j,k)
-            # for m in range(self.nx):
-            #     for n in range(self.n_channel):
-            #         cx = self.channel_centers[m,n,0]
-            #         cy = self.channel_centers[m,n,1]
-            #         cz = self.channel_centers[m,n,2]
-            #         dist = ((x - cx)**2 + (y - cy)**2 + (z - cz)**2)**0.5
-            #         if dist < dist_min:
-            #             dist_min = dist
-            #             cx_closest = cx
-            #             cy_closest = cy
-            #             cz_closest = cz
-                       
-            # x = (x - cx_closest) / (2 * self.cell_L) # This should always be 0, I think (I favor returning the exact value, so the channel center is on the inlet)
-            # y = (y - cy_closest) / (2 * self.liquid_cell_W)
-            # z = (z - cz_closest) / (2 * self.cell_H)
-            
-                        
-            # faster method
-            
-            
+        def channel_x_y_z(i,j,k):           
             rx, ry, rz = ijk_to_xyz(i,j,k)
             x = rx / self.L_channel
             z = ((rz - self.unit_h_wall_real) / self.H_channel) - 0.5
