@@ -27,7 +27,7 @@ def propagate_current(T_in: ti.f32, fluid: ti.template(), geometry: ti.template(
         for k in range(geometry.nz-1):
             # inlet
             dm = fluid.rho * geometry.velocity[0,j,k,0] * geometry.interface_area[0,j,k,0] # should really be [-1,j,k,0], but this works since that is not set (auto set to 0)
-            geometry.current[-1,j,k,0] += dm * fluid.cp * T_in
+            geometry.current[-1,j,k,0] = dm * fluid.cp * T_in
             
     for i in range(geometry.nx-1):
         for j in range(geometry.ny-1):
@@ -43,7 +43,7 @@ def propagate_current(T_in: ti.f32, fluid: ti.template(), geometry: ti.template(
         for k in range(geometry.nz-1):
             T = geometry.temp[geometry.nx-1,j,k] # (at the outlet, the temperature is the same as the last node, since we don't care about exit heat balance...)
             dm = fluid.rho * geometry.velocity[geometry.nx-1,j,k,0] * geometry.interface_area[lnx,j,k,0]
-            geometry.current[lnx,j,k,0] += dm * fluid.cp * T
+            geometry.current[lnx,j,k,0] = dm * fluid.cp * T
             
     
 @ti.kernel
@@ -82,7 +82,7 @@ class MicroChannelCooler:
         # Q : fluid flow rate [uL/min]
         param = {
             'T_in': limits['T_in']['init'],
-            'heat_flux_function': lambda x,y: 0.0, # TODO (@savannahsmith, please add a more realistic default and work with GUI team to figure out how to pass in a function)
+            'heat_flux_function': lambda x,y: 0.25, # TODO (@savannahsmith, please add a more realistic default and work with GUI team to figure out how to pass in a function)
             'Q' : limits['Q']['init'], 
             'geometry' : None,
             'fluid' : fluids[0],
@@ -123,9 +123,12 @@ class MicroChannelCooler:
                 commit(self.geometry)
                 
                 zero_current(self.geometry)
+                
                 propagate_current(self.T_in, self.fluid,self.geometry) # adjust current to account for fluid motion
                 calculate_temperature(self.geometry)
                 commit(self.geometry)
+                
+                zero_current(self.geometry)
     
     
     def solve(self, make_fields=False):
@@ -183,8 +186,9 @@ if __name__ == '__main__':
     
     import numpy as np
     data = g.temp.to_numpy()[:,:,:].reshape(g.nx,g.ny,g.nz) - 273.15
-    print(data[0,:,:])
-    print(np.min(data), np.mean(data), np.max(data))
+    # data = g.temp_next.to_numpy()[:,:,:].reshape(g.nx,g.ny,g.nz) - g.temp.to_numpy()[:,:,:].reshape(g.nx,g.ny,g.nz)
+    print(data[:,:,:])
+    print(np.min(data), np.mean(data), np.std(data), np.max(data))
     import pyvista as pv
     pl = pv.Plotter()
     pl.open_gif(f"../../../output_3d.gif")   
