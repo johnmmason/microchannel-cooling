@@ -18,7 +18,7 @@ def solid_to_liquid(fluid: ti.template(), geometry: ti.template(),
         Nu = geometry.Nu[i2,j2,k2]
             
     h = Nu * fluid.k / geometry.D_channel
-    A = geometry.interface_area[ie,je,ke,we]
+    A = geometry.interface_area[ie,je,ke,we] # maybe add conduction resistance in parallel?
     return 1/(h*A)
 
 @ti.func

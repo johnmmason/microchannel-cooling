@@ -18,7 +18,8 @@ def calculate_current(geometry: ti.template()):
         for j in range(geometry.ny-1):
             for k in range(geometry.nz-1):
                 for w in range(geometry.nd):
-                    geometry.current[i,j,k,w] = (geometry.temp[i,j,k] - geometry.temp[i+1,j+1,k+1]) / geometry.heat_resist[i,j,k,w]
+                    i2, j2, k2 = i + (w == 0), j + (w == 1), k + (w == 2)
+                    geometry.current[i,j,k,w] = (geometry.temp[i,j,k] - geometry.temp[i2,j2,k2]) / geometry.heat_resist[i,j,k,w]
 
 @ti.kernel
 def propagate_current(T_in: ti.f32, fluid: ti.template(), geometry: ti.template()):
@@ -83,18 +84,18 @@ class MicroChannelCooler:
         # Q : fluid flow rate [uL/min]
         param = {
             'T_in': limits['T_in']['init'],
-            'heat_flux_function': lambda x,y: 0.25, # TODO (@savannahsmith, please add a more realistic default and work with GUI team to figure out how to pass in a function)
+            'heat_flux_function': lambda x,y: 0.2, # TODO (@savannahsmith, please add a more realistic default and work with GUI team to figure out how to pass in a function)
             'Q' : limits['Q']['init'], 
             'geometry' : None,
             'fluid' : fluids[0],
             'solid': si,
-            'nit': 200,
+            'nit': 20,
         } 
         param.update(kwargs)
         
         # unit conversions
         param['T_in'] += limits['T_in']['shift']
-        param['Q'] *= (15/9)/(10**8) # uL/min -> m^3/s
+        param['Q'] *= (15/9)/(10**8)*0.0 # uL/min -> m^3/s
         hff = param['heat_flux_function']
         param['heat_flux_function'] = lambda x,y: hff(x,y) * (10**4) # W/m^2 -> W/cm^2
         
@@ -145,9 +146,9 @@ if __name__ == '__main__':
     
     ti.init(ti.cpu, kernel_profiler=False)
     g = Geometry()
-    # m = MicroChannelCooler(geometry=g)
-    # m.solve()
-    # print('lmd_model.py succeeded!')
+    m = MicroChannelCooler(geometry=g)
+    m.solve()
+    print('lmd_model.py succeeded!')
     # ti.profiler.print_kernel_profiler_info()
     
     # window = ti.ui.Window("Lumped Mass Model", (768, 768))
@@ -166,17 +167,18 @@ if __name__ == '__main__':
     #             for k in range(g.nz):
     #                 x,y,z = g.ijk_to_xyz(i, j, k)
     #                 f[i*g.ny*g.nz + j*g.nz +k] = ti.Vector([x*1000,y*1000,z*1000])
-    #                 t = float(item[i,j,k,0]) - tmin
+    #                 t = float(item[i,j,k]) - tmin
     #                 t /= trange
     #                 b = 1 - t
     #                 c[i*g.ny*g.nz + j*g.nz +k] = ti.Vector([t,.5,b])
                     
     # # make_pos(particles_pos,c,g,g.temp,273.15,100)   
     # # make_pos(particles_pos,c,g,g.heat_flux,0.0,0.0125) # clamping out everything above 0.0125
-    # make_pos(particles_pos,c,g,g.interface_area,0.0,0.00000001)
+    # # make_pos(particles_pos,c,g,g.interface_area,0.0,100e-10)
+    # make_pos(particles_pos,c,g,g.heat_capacity,0.0,1e-7)
     # # make_pos(particles_pos,c,g,g.isfluid,0,3.0)    
     # while window.running:
-    #     camera.track_user_inputs(window, movement_speed=0.03, hold_key=ti.ui.RMB)
+    #     camera.track_user_inputs(window, movement_speed=0.01, hold_key=ti.ui.RMB)
     #     scene.set_camera(camera)
     #     scene.ambient_light((0.8, 0.8, 0.8))
     #     scene.point_light(pos=(0.5, 1.5, 1.5), color=(1, 1, 1))
@@ -189,31 +191,31 @@ if __name__ == '__main__':
     import numpy as np
     data = g.temp.to_numpy()[:,:,:].reshape(g.nx,g.ny,g.nz) - 273.15
     
-    @ti.kernel
-    def shift(geo:ti.template()):
-        for z in range(-1,geo.nz+1):
-            print(geo.interfaces[0,0,z,0], geo.interface_area[0,0,z,0]*1.0e11, \
-                  geo.interface_area[0,0,z,1]*1.0e11, \
-                  geo.interface_area[0,0,z,2]*1.0e11)
-    #     # for i in range(g.nx):
-    #     #     for j in range(g.ny):
-    #     #         for k in range(g.nz):
-    #     #             for w in range(g.nd):
-    #     #                 item[i,j,k,w] = cur[i-1,j-1,k-1,w]
+    # @ti.kernel
+    # def shift(geo:ti.template()):
+    #     for z in range(-1,geo.nz+1):
+    #         print(geo.interfaces[0,0,z,0], geo.interface_area[0,0,z,0]*1.0e11, \
+    #               geo.interface_area[0,0,z,1]*1.0e11, \
+    #               geo.interface_area[0,0,z,2]*1.0e11)
+    # #     # for i in range(g.nx):
+    # #     #     for j in range(g.ny):
+    # #     #         for k in range(g.nz):
+    # #     #             for w in range(g.nd):
+    # #     #                 item[i,j,k,w] = cur[i-1,j-1,k-1,w]
     
-    # cur = ti.field(ti.f32, shape=(g.nx+1,g.ny+1,g.nz+1,g.nd))
-    shift(g)
+    # # cur = ti.field(ti.f32, shape=(g.nx+1,g.ny+1,g.nz+1,g.nd))
+    # shift(g)
     # data = cur.to_numpy()[:,:,:,0]   
     # data = data[0:-1,1:,1:].reshape(g.nx,g.ny,g.nz)
     # data = g.temp_next.to_numpy()[:,:,:].reshape(g.nx,g.ny,g.nz) - g.temp.to_numpy()[:,:,:].reshape(g.nx,g.ny,g.nz)
     # print(data[:,:,:])
-    print(np.min(data), np.mean(data), np.std(data), np.max(data))
-    # import pyvista as pv
-    # pl = pv.Plotter()
-    # pl.open_gif(f"../../../output_3d.gif")   
-    # # pl.camera.position = (-1.1, -1.5, 0.0)
-    # # pl.camera.focal_point = (50.0, 50.0, 0.0)
-    # # pl.camera.up = (1.0, 0.0, 1.0)
-    # pl.add_volume(data, cmap="jet", opacity=0.5)
-    # pl.write_frame()
-    # pl.close()
+    # print(np.min(data), np.mean(data), np.std(data), np.max(data))
+    import pyvista as pv
+    pl = pv.Plotter()
+    pl.open_gif(f"../../../output_3d.gif")   
+    # pl.camera.position = (-1.1, -1.5, 0.0)
+    # pl.camera.focal_point = (50.0, 50.0, 0.0)
+    # pl.camera.up = (1.0, 0.0, 1.0)
+    pl.add_volume(data, cmap="jet", opacity=0.5)
+    pl.write_frame()
+    pl.close()
