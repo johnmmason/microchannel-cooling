@@ -3,20 +3,20 @@ import taichi as ti
 @ti.data_oriented
 class Geometry:
     def __init__(self, **kwargs):  # sourcery skip: assign-if-exp
-        param = {
-            'L_chip': 0.01464, 'W_chip': 0.0168, 'H_chip': 0.0001,
-            'L_channel': 0.01464, 'W_channel': 500e-6, 'H_channel': 50e-6,
-            'n_channel': 30,
-            'nx': 100, 'ny_channel': 8, 'ny_wall': 1, 'nz_channel': 2, 'nz_wall': 1,
-            'h': 1e-6, 'substep': 1,
-        } 
         # param = {
-        #     'L_chip': 0.02, 'W_chip': 0.01, 'H_chip': 0.0001,
-        #     'L_channel': 0.02, 'W_channel': 100e-6, 'H_channel': 50e-6,
-        #     'n_channel': 1,
-        #     'nx': 100, 'ny_channel': 8, 'ny_wall': 1, 'nz_channel': 8, 'nz_wall': 1,
+        #     'L_chip': 0.01464, 'W_chip': 0.0168, 'H_chip': 0.0001,
+        #     'L_channel': 0.01464, 'W_channel': 500e-6, 'H_channel': 50e-6,
+        #     'n_channel': 30,
+        #     'nx': 100, 'ny_channel': 8, 'ny_wall': 1, 'nz_channel': 2, 'nz_wall': 1,
         #     'h': 1e-6, 'substep': 1,
         # } 
+        param = {
+            'L_chip': 0.02, 'W_chip': 0.00012, 'H_chip': 0.0001,
+            'L_channel': 0.02, 'W_channel': 100e-6, 'H_channel': 50e-6,
+            'n_channel': 1,
+            'nx': 100, 'ny_channel': 8, 'ny_wall': 2, 'nz_channel': 8, 'nz_wall': 1,
+            'h': 1e-6, 'substep': 1,
+        } 
         param.update(kwargs)
         
         # for key, val in param.items():
@@ -204,7 +204,7 @@ class Geometry:
                 Ax = self.s2_s2_x_interface_area
                 Ay = self.ly_interface_area
                 Az = self.sz_interface_area
-            else:
+            elif current_location == 3:
             # We are at a solid3 cell
                 Ax = self.s3_s3_x_interface_area
                 Ay = self.sy_interface_area
@@ -213,23 +213,67 @@ class Geometry:
         
         @ti.kernel
         def make_materials():
-            for i in range(self.nx):
-                for j in range(self.ny):
-                    for k in range(self.nz):
+            # for i0 in range(self.nx+1):
+            #     for j0 in range(self.ny+1):
+                    i0 = 0
+                    j0 = 0
+                    for k0 in range(self.nz+1):
+                        point = 0
+                        i, j, k = i0, j0, k0 
+                        if i0 < self.nx and j0 < self.ny and k0 < self.nz:      
+                            point = self.isfluid[i,j,k]
+                            self.volume[i,j,k] = determine_volume(point)
+                        
+                        if i0 >= self.nx:
+                            i = i0 - 1
+                        if j0 >= self.ny - 1:
+                            j = 0
+                        if k0 >= self.nz - 1:
+                            k = 0
                         point = self.isfluid[i,j,k]
-                        self.volume[i,j,k] = determine_volume(point)
-                        if j < self.ny-1 and k < self.nz-1:
-                            point_stepy = self.isfluid[i,j+1,k]
-                            point_stepz = self.isfluid[i,j,k+1]
-                            Ix, Iy, Iz = determine_interface_types(point, point_stepy, point_stepz)
-                            self.interfaces[i,j,k,0] = Ix
-                            self.interfaces[i,j,k,1] = Iy
-                            self.interfaces[i,j,k,2] = Iz  
-                            Ax, Ay, Az = determine_interface_areas(point)
-                            self.interface_area[i,j,k,0] = Ax
-                            self.interface_area[i,j,k,1] = Ay
-                            self.interface_area[i,j,k,2] = Az
+                        point_stepy = self.isfluid[i,j+1,k]
+                        point_stepz = self.isfluid[i,j,k+1]
+
+                        Ix, Iy, Iz = determine_interface_types(point, point_stepy, point_stepz)
+                        self.interfaces[i,j,k,0] = Ix
+                        self.interfaces[i,j,k,1] = Iy
+                        self.interfaces[i,j,k,2] = Iz  
+                        Ax, Ay, Az = determine_interface_areas(point)
+                        self.interface_area[i,j,k,0] = Ax
+                        self.interface_area[i,j,k,1] = Ay
+                        self.interface_area[i,j,k,2] = Az
+                        
+                        print(point, self.interface_area[i,j,k,0]*1.0e11, self.interface_area[i,j,k,1]*1.0e11, self.interface_area[i,j,k,2]*1.0e11)
+
+        # @ti.kernel
+        # def adjust_materials():
+            # for i in range(-1,self.nx + 1):
+            #     for j in range(-1,self.ny + 1):
+            #         for w in range(self.nd):
+            #             self.interfaces[i,j,self.nz-1,w] = self.interfaces[i,j,0,w]
+            #             self.interface_area[i,j,self.nz-1,w] = self.interface_area[i,j,0,w]
+            #             self.interfaces[i,j,-1, w] = self.interfaces[i,j,0,w]
+            #             self.interface_area[i,j,-1, w] = self.interface_area[i,j,0,w]
+
+
+            # # repeat the above i,j loops for all 3 paired surfaces of the box in a loop
+            # for k in range(-1,self.nz + 1):
+            #     for j in range(-1,self.ny + 1):
+            #         for w in range(self.nd):
+            #             self.interfaces[self.nx,j,k,w] = 0
+            #             self.interface_area[self.nx,j,k,w] = 0
+                        
+            # for i in range(-1,self.nx + 1):
+            #     for k in range(-1,self.nz + 1):
+            #         for w in range(self.nd):
+            #             self.interfaces[i,self.ny,k,w] = self.interfaces[i,0,k,w]
+            #             self.interface_area[i,self.ny,k,w] = self.interface_area[i,0,k,w]
+            #             self.interfaces[i,-1,k, w] = self.interfaces[i,0,k,w]
+            #             self.interface_area[i,-1,k, w] = self.interface_area[i,0,k,w]
+
+                        
         make_materials()
+        # adjust_materials()
         
         @ti.func
         def ijk_to_xyz(i:ti.i32, j:ti.i32, k:ti.i32): # TODO consolidate ifs to min/max or vice versa

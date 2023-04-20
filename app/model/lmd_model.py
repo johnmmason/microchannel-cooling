@@ -65,6 +65,7 @@ def calculate_temperature(geometry: ti.template()):
                 # print(flux)
                 geometry.temp_next[i,j,k] = (flux * (geometry.h / geometry.substep) / geometry.heat_capacity[i,j,k]) + geometry.temp[i,j,k]
 
+
 @ti.kernel
 def commit(geometry: ti.template()):
     for i in range(geometry.nx):
@@ -87,7 +88,7 @@ class MicroChannelCooler:
             'geometry' : None,
             'fluid' : fluids[0],
             'solid': si,
-            'nit': 500,
+            'nit': 200,
         } 
         param.update(kwargs)
         
@@ -106,7 +107,7 @@ class MicroChannelCooler:
         for key, val in param.items():
             setattr(self, key, val)                   
                     
-    def main(self, **kwargs):
+    def main(self, **kwargs):  # sourcery skip: extract-duplicate-method
                         
         setup_fluid_velocity(self.Q, self.geometry)
         calculate_Re(self.fluid, self.geometry)
@@ -144,9 +145,9 @@ if __name__ == '__main__':
     
     ti.init(ti.cpu, kernel_profiler=False)
     g = Geometry()
-    m = MicroChannelCooler(geometry=g)
-    m.solve()
-    print('lmd_model.py succeeded!')
+    # m = MicroChannelCooler(geometry=g)
+    # m.solve()
+    # print('lmd_model.py succeeded!')
     # ti.profiler.print_kernel_profiler_info()
     
     # window = ti.ui.Window("Lumped Mass Model", (768, 768))
@@ -165,13 +166,14 @@ if __name__ == '__main__':
     #             for k in range(g.nz):
     #                 x,y,z = g.ijk_to_xyz(i, j, k)
     #                 f[i*g.ny*g.nz + j*g.nz +k] = ti.Vector([x*1000,y*1000,z*1000])
-    #                 t = float(item[i,j,k]) - tmin
+    #                 t = float(item[i,j,k,0]) - tmin
     #                 t /= trange
     #                 b = 1 - t
     #                 c[i*g.ny*g.nz + j*g.nz +k] = ti.Vector([t,.5,b])
                     
-    # make_pos(particles_pos,c,g,g.temp,273.15,100)   
+    # # make_pos(particles_pos,c,g,g.temp,273.15,100)   
     # # make_pos(particles_pos,c,g,g.heat_flux,0.0,0.0125) # clamping out everything above 0.0125
+    # make_pos(particles_pos,c,g,g.interface_area,0.0,0.00000001)
     # # make_pos(particles_pos,c,g,g.isfluid,0,3.0)    
     # while window.running:
     #     camera.track_user_inputs(window, movement_speed=0.03, hold_key=ti.ui.RMB)
@@ -186,15 +188,32 @@ if __name__ == '__main__':
     
     import numpy as np
     data = g.temp.to_numpy()[:,:,:].reshape(g.nx,g.ny,g.nz) - 273.15
+    
+    @ti.kernel
+    def shift(geo:ti.template()):
+        for z in range(-1,geo.nz+1):
+            print(geo.interfaces[0,0,z,0], geo.interface_area[0,0,z,0]*1.0e11, \
+                  geo.interface_area[0,0,z,1]*1.0e11, \
+                  geo.interface_area[0,0,z,2]*1.0e11)
+    #     # for i in range(g.nx):
+    #     #     for j in range(g.ny):
+    #     #         for k in range(g.nz):
+    #     #             for w in range(g.nd):
+    #     #                 item[i,j,k,w] = cur[i-1,j-1,k-1,w]
+    
+    # cur = ti.field(ti.f32, shape=(g.nx+1,g.ny+1,g.nz+1,g.nd))
+    shift(g)
+    # data = cur.to_numpy()[:,:,:,0]   
+    # data = data[0:-1,1:,1:].reshape(g.nx,g.ny,g.nz)
     # data = g.temp_next.to_numpy()[:,:,:].reshape(g.nx,g.ny,g.nz) - g.temp.to_numpy()[:,:,:].reshape(g.nx,g.ny,g.nz)
-    print(data[:,:,:])
+    # print(data[:,:,:])
     print(np.min(data), np.mean(data), np.std(data), np.max(data))
-    import pyvista as pv
-    pl = pv.Plotter()
-    pl.open_gif(f"../../../output_3d.gif")   
-    # pl.camera.position = (-1.1, -1.5, 0.0)
-    # pl.camera.focal_point = (50.0, 50.0, 0.0)
-    # pl.camera.up = (1.0, 0.0, 1.0)
-    pl.add_volume(data, cmap="jet", opacity=0.5)
-    pl.write_frame()
-    pl.close()
+    # import pyvista as pv
+    # pl = pv.Plotter()
+    # pl.open_gif(f"../../../output_3d.gif")   
+    # # pl.camera.position = (-1.1, -1.5, 0.0)
+    # # pl.camera.focal_point = (50.0, 50.0, 0.0)
+    # # pl.camera.up = (1.0, 0.0, 1.0)
+    # pl.add_volume(data, cmap="jet", opacity=0.5)
+    # pl.write_frame()
+    # pl.close()
