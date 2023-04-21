@@ -15,7 +15,7 @@ class Geometry:
             'L_channel': 0.02, 'W_channel': 100e-6, 'H_channel': 50e-6,
             'n_channel': 1,
             'nx': 100, 'ny_channel': 9, 'ny_wall': 2, 'nz_channel': 9, 'nz_wall': 2,
-            'h': 1e-6, 'substep': 1,
+            'h': 1e-8, 'substep': 1,
         } 
         param.update(kwargs)
         

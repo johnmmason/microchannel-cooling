@@ -19,7 +19,7 @@ def calculate_current(geometry: ti.template()):
             for k in range(geometry.nz-1):
                 for w in range(geometry.nd):
                     i2, j2, k2 = i + (w == 0), j + (w == 1), k + (w == 2)
-                    geometry.current[i,j,k,w] = (geometry.temp[i,j,k] - geometry.temp[i2,j2,k2]) / geometry.heat_resist[i,j,k,w]
+                    geometry.current[i,j,k,w] += (geometry.temp[i,j,k] - geometry.temp[i2,j2,k2]) / geometry.heat_resist[i,j,k,w]
 
 @ti.kernel
 def propagate_current(T_in: ti.f32, fluid: ti.template(), geometry: ti.template()):
@@ -89,13 +89,13 @@ class MicroChannelCooler:
             'geometry' : None,
             'fluid' : fluids[0],
             'solid': si,
-            'nit': 20,
+            'nit': 20000,
         } 
         param.update(kwargs)
         
         # unit conversions
         param['T_in'] += limits['T_in']['shift']
-        param['Q'] *= (15/9)/(10**8)*0.0 # uL/min -> m^3/s
+        param['Q'] *= (15/9)/(10**8) # uL/min -> m^3/s
         hff = param['heat_flux_function']
         param['heat_flux_function'] = lambda x,y: hff(x,y) * (10**4) # W/m^2 -> W/cm^2
         
@@ -120,17 +120,18 @@ class MicroChannelCooler:
             calculate_Nu(self.fluid, self.geometry)
             setup_heat_resistance(self.solid, self.fluid, self.geometry)
             for _ in range(self.geometry.substep):
-                calculate_current(self.geometry)
-                calculate_temperature(self.geometry)
-                commit(self.geometry)
-                
                 zero_current(self.geometry)
+                calculate_current(self.geometry)
+                # calculate_temperature(self.geometry)
+                # commit(self.geometry)
+                
+                # zero_current(self.geometry)
                 
                 propagate_current(self.T_in, self.fluid,self.geometry) # adjust current to account for fluid motion
                 calculate_temperature(self.geometry)
                 commit(self.geometry)
                 
-                zero_current(self.geometry)
+                
     
     
     def solve(self, make_fields=False):
