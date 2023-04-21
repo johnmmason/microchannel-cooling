@@ -66,13 +66,15 @@ def calculate_temperature(geometry: ti.template()):
                 # print(flux)
                 geometry.temp_next[i,j,k] = (flux * (geometry.h / geometry.substep) / geometry.heat_capacity[i,j,k]) + geometry.temp[i,j,k]
 
-
 @ti.kernel
 def commit(geometry: ti.template()):
+    geometry.sum_temp[0] = 0.0
     for i in range(geometry.nx):
         for j in range(geometry.ny):
             for k in range(geometry.nz):
-                geometry.temp[i,j,k] = ti.min(ti.max(geometry.temp_next[i,j,k],273.15),373.15)
+                new_T = ti.min(ti.max(geometry.temp_next[i,j,k],273.15),373.15)
+                geometry.sum_temp[0] += ti.abs(new_T - geometry.temp[i,j,k])
+                geometry.temp[i,j,k] = new_T
 
 class MicroChannelCooler:
 
@@ -84,12 +86,12 @@ class MicroChannelCooler:
         # Q : fluid flow rate [uL/min]
         param = {
             'T_in': limits['T_in']['init'],
-            'heat_flux_function': lambda x,y: 0.2, # TODO (@savannahsmith, please add a more realistic default and work with GUI team to figure out how to pass in a function)
+            'heat_flux_function': lambda x,y: 5000, # TODO (@savannahsmith, please add a more realistic default and work with GUI team to figure out how to pass in a function)
             'Q' : limits['Q']['init'], 
             'geometry' : None,
             'fluid' : fluids[0],
             'solid': si,
-            'nit': 20000,
+            'nit': 400000,
         } 
         param.update(kwargs)
         
@@ -97,7 +99,7 @@ class MicroChannelCooler:
         param['T_in'] += limits['T_in']['shift']
         param['Q'] *= (15/9)/(10**8) # uL/min -> m^3/s
         hff = param['heat_flux_function']
-        param['heat_flux_function'] = lambda x,y: hff(x,y) * (10**4) # W/m^2 -> W/cm^2
+        param['heat_flux_function'] = lambda x,y: hff(x,y) * (10**4) # W/cm^2 -> W/m^2
         
         
         
@@ -115,21 +117,34 @@ class MicroChannelCooler:
         setup_heat_flux(self.heat_flux_function, self.geometry)
         setup_nodal_heat_capacity(self.solid, self.fluid, self.geometry)
         setup_temperature(self.geometry)
-
-        for _ in tqdm(range(self.nit)):
+    
+        dt0 = 500.0
+        for it in tqdm(range(self.nit)):
             calculate_Nu(self.fluid, self.geometry)
             setup_heat_resistance(self.solid, self.fluid, self.geometry)
+
             for _ in range(self.geometry.substep):
                 zero_current(self.geometry)
                 calculate_current(self.geometry)
-                # calculate_temperature(self.geometry)
-                # commit(self.geometry)
-                
-                # zero_current(self.geometry)
-                
                 propagate_current(self.T_in, self.fluid,self.geometry) # adjust current to account for fluid motion
                 calculate_temperature(self.geometry)
                 commit(self.geometry)
+                dt = self.geometry.sum_temp[0]
+                
+            if it==1:
+                dt0 = dt
+            if it > 2 and (dt < 0.01*dt0 or dt < 400/self.geometry.nn):
+                print('Converged in', it+1, 'iterations, with final step-size dT =', float(dt))
+                return
+            elif it > self.nit*0.01 and dt/dt0 > 0.9:
+                if dt/dt0 < 1.5:
+                    print('Failed any possible converge in', it+1, 'iterations, with constant step-size dT =', float(dt), '\n Please check your timestep, spatial resolution, and heat-flux magnitude.')
+                else:
+                    print('Exploded within in', it+1, 'iterations, with step-size dT =', float(dt), '\n Please check your timestep, spatial resolution, and heat-flux magnitude to improve stability.')
+                return
+            print('Iteration', it+1, 'completed with step-size dT =', float(dt))
+            
+                
                 
                 
     

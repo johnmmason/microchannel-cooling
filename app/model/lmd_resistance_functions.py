@@ -34,8 +34,17 @@ def liquid_to_liquid(fluid: ti.template(),geometry: ti.template(),
                      i1:ti.i32,j1:ti.i32,k1:ti.i32,i2:ti.i32,j2:ti.i32,k2:ti.i32,ie:ti.i32,je:ti.i32,ke:ti.i32,we:ti.i32):
     p1 = geometry.ijk_to_xyz(i1,j1,k1)
     p2  = geometry.ijk_to_xyz(i2,j2,k2)
+       
+    A = geometry.interface_area[ie,je,ke,we]
     d = ti.sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2 + (p1[2]-p2[2])**2)
-    return d/(fluid.k * geometry.interface_area[ie,je,ke,we])
+    
+    Nu = 0.5*(geometry.Nu[i1,j1,k1] + geometry.Nu[i2,j2,k2])
+    h = Nu * fluid.k / d
+    
+    R_cond = d/(fluid.k * A)
+    R_conv = 1/(h * A)
+    
+    return  1/(1/R_cond + 1/R_conv)
     
     
     

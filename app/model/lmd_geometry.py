@@ -3,20 +3,20 @@ import taichi as ti
 @ti.data_oriented
 class Geometry:
     def __init__(self, **kwargs):  # sourcery skip: assign-if-exp
-        # param = {
-        #     'L_chip': 0.01464, 'W_chip': 0.0168, 'H_chip': 0.0001,
-        #     'L_channel': 0.01464, 'W_channel': 500e-6, 'H_channel': 50e-6,
-        #     'n_channel': 30,
-        #     'nx': 100, 'ny_channel': 15, 'ny_wall': 4, 'nz_channel': 15, 'nz_wall': 4,
-        #     'h': 1e-6, 'substep': 1,
-        # } 
         param = {
-            'L_chip': 0.02, 'W_chip': 0.00012, 'H_chip': 0.0001,
-            'L_channel': 0.02, 'W_channel': 100e-6, 'H_channel': 50e-6,
-            'n_channel': 1,
-            'nx': 100, 'ny_channel': 9, 'ny_wall': 2, 'nz_channel': 9, 'nz_wall': 2,
+            'L_chip': 0.01464, 'W_chip': 0.0168, 'H_chip': 0.0001,
+            'L_channel': 0.01464, 'W_channel': 500e-6, 'H_channel': 50e-6,
+            'n_channel': 30,
+            'nx': 50, 'ny_channel': 9, 'ny_wall': 2, 'nz_channel': 9, 'nz_wall': 2,
             'h': 1e-8, 'substep': 1,
         } 
+        # param = {
+        #     'L_chip': 0.02, 'W_chip': 0.00012, 'H_chip': 0.0001,
+        #     'L_channel': 0.02, 'W_channel': 100e-6, 'H_channel': 50e-6,
+        #     'n_channel': 1,
+        #     'nx': 100, 'ny_channel': 9, 'ny_wall': 2, 'nz_channel': 9, 'nz_wall': 2,
+        #     'h': 1e-8, 'substep': 1,
+        # } 
         param.update(kwargs)
         
         # for key, val in param.items():
@@ -35,6 +35,7 @@ class Geometry:
         self.nx = param['nx']
         self.ny = (param['ny_channel'] + param['ny_wall'] * 2) * (param['n_channel'])
         self.nz = (param['nz_channel'] + param['nz_wall'] * 2)
+        self.nn = self.nx * self.ny * self.nz
 
         # physical parameters
         # time-integration related
@@ -85,6 +86,7 @@ class Geometry:
         self.interface_area = ti.field(ti.f32, shape = (*elements2,self.nd), offset=(-1,-1,-1, 0)) # TODO area of interface between solid and fluid, @colenockolds
 
         self.heat_capacity = ti.field(ti.f32, shape = nodes,) # TODO @longvu
+        self.sum_temp = ti.field(ti.f32, shape = (1,))
         
         # Resistance / intermediate arrays:
         self.current = ti.field(ti.f32, shape = (*elements2,self.nd), offset=(-1,-1,-1,0)) # 4D array (elements x nd), for x-y-z springs) (this is basically dynamic heat flux)
