@@ -4,6 +4,7 @@ if __name__ == '__main__':
     sys.path.append("..")
 
 import taichi as ti
+import math
 from model.limits import limits
 from model.fluids import fluids, silicon as si # TODO Si parameters (@longvu)
 from model.lmd_fluid import setup_fluid_velocity, calculate_Re, calculate_Nu
@@ -14,6 +15,7 @@ from tqdm import tqdm
 
 @ti.kernel
 def calculate_current(geometry: ti.template()):
+    ti.loop_config(parallelize=8, block_dim=16)
     for i in range(geometry.nx-1):
         for j in range(geometry.ny-1):
             for k in range(geometry.nz-1):
@@ -23,6 +25,7 @@ def calculate_current(geometry: ti.template()):
 
 @ti.kernel
 def propagate_current(T_in: ti.f32, fluid: ti.template(), geometry: ti.template()):
+    ti.loop_config(parallelize=8, block_dim=16)
     # inlet # check this - not sure if it's correct
     for j in range(geometry.ny-1):
         for k in range(geometry.nz-1):
@@ -49,12 +52,14 @@ def propagate_current(T_in: ti.f32, fluid: ti.template(), geometry: ti.template(
     
 @ti.kernel
 def zero_current(geometry: ti.template()):
+    ti.loop_config(parallelize=8, block_dim=16)
     for i in ti.grouped(geometry.current):
         geometry.current[i] = 0.0
 
 
 @ti.kernel
 def calculate_temperature(geometry: ti.template()):
+    ti.loop_config(parallelize=8, block_dim=16)
     for i in range(geometry.nx):
         for j in range(geometry.ny):
             for k in range(geometry.nz):
@@ -63,17 +68,19 @@ def calculate_temperature(geometry: ti.template()):
                     - geometry.current[i,j,k,0] + geometry.current[i-1,j,k,0] \
                     - geometry.current[i,j,k,1] + geometry.current[i,j-1,k,1] \
                     - geometry.current[i,j,k,2] + geometry.current[i,j,k-1,2]
-                # print(flux)
+                geometry.net_flux[i,j,k] = flux 
                 geometry.temp_next[i,j,k] = (flux * (geometry.h / geometry.substep) / geometry.heat_capacity[i,j,k]) + geometry.temp[i,j,k]
 
 @ti.kernel
 def commit(geometry: ti.template()):
+    ti.loop_config(parallelize=8, block_dim=16)
     geometry.sum_temp[0] = 0.0
     for i in range(geometry.nx):
         for j in range(geometry.ny):
             for k in range(geometry.nz):
                 new_T = ti.min(ti.max(geometry.temp_next[i,j,k],273.15),373.15)
-                geometry.sum_temp[0] += ti.abs(new_T - geometry.temp[i,j,k])
+                dT = new_T - geometry.temp[i,j,k]
+                geometry.sum_temp[0] += ti.abs(dT)
                 geometry.temp[i,j,k] = new_T
 
 class MicroChannelCooler:
@@ -84,9 +91,12 @@ class MicroChannelCooler:
         # T_in : fluid inlet temperature [K]
         # heat_flux_function : function of (x,y,t) that returns heat flux [W/m^2]
         # Q : fluid flow rate [uL/min]
+        
+        # 500*math.exp((-x**2-y**2)*4)
+        
         param = {
             'T_in': limits['T_in']['init'],
-            'heat_flux_function': lambda x,y: 5000, # TODO (@savannahsmith, please add a more realistic default and work with GUI team to figure out how to pass in a function)
+            'heat_flux_function': lambda x,y: 250, # TODO (@savannahsmith, please add a more realistic default and work with GUI team to figure out how to pass in a function)
             'Q' : limits['Q']['init'], 
             'geometry' : None,
             'fluid' : fluids[0],
@@ -94,6 +104,7 @@ class MicroChannelCooler:
             'nit': 400000,
         } 
         param.update(kwargs)
+        self.param = param
         
         # unit conversions
         param['T_in'] += limits['T_in']['shift']
@@ -133,10 +144,10 @@ class MicroChannelCooler:
                 
             if it==1:
                 dt0 = dt
-            if it > 2 and (dt < 0.01*dt0 or dt < 400/self.geometry.nn):
+            if it > 1000 and ((dt < 0.01*dt0 and dt < 1e9*self.geometry.h) or dt < 0.04):
                 print('Converged in', it+1, 'iterations, with final step-size dT =', float(dt))
                 return
-            elif it > self.nit*0.01 and dt/dt0 > 0.9:
+            elif it > self.nit*0.1 and dt/dt0 > 0.9:
                 if dt/dt0 < 1.5:
                     print('Failed any possible converge in', it+1, 'iterations, with constant step-size dT =', float(dt), '\n Please check your timestep, spatial resolution, and heat-flux magnitude.')
                 else:
@@ -153,6 +164,7 @@ class MicroChannelCooler:
         
         self.main(**self.geometry.__dict__,
                     **self.fluid.__dict__)
+        
         
         # Please output relevant estimates here; I'm not sure what we need to output - esp. re. complete field data for CFD (which will be output if make_fields is True)
         # temp, heat_flux over length / slice along z-axis
@@ -203,10 +215,86 @@ if __name__ == '__main__':
     #     # Draw 3d-lines in the scene
     #     canvas.scene(scene)
     #     window.show()
-    
+
+    # hf = r"Constant Heat Flux $250 \frac{W}{cm^2}$"
+    # hf_s = "C250"
+
+    # hf = r"Constant Heat Flux $25 \frac{kW}{cm^2}$"
+    # hf_s = "Ck25"
+
+    # hf = r"Constant Heat Flux $250 \frac{kW}{cm^2}$"
+    # hf_s = "Ck250"
+
+    hf = r"Constant Heat Flux $250 \frac{W}{cm^2}$"
+    hf_s = "C250H"
+
+    # hf = r"Gaussian Heat Flux w Peak: $250 \frac{kW}{cm^2}$"
+    # hf_s = "Gk250H"
+
+    # hf = r"Gaussian Heat Flux w Peak: $500 \frac{W}{cm^2}$"
+    # hf_s = "G500H"
     import numpy as np
     data = g.temp.to_numpy()[:,:,:].reshape(g.nx,g.ny,g.nz) - 273.15
+    import pyvista as pv
+    try:
+        pl = pv.Plotter()
+        pl.open_gif(f"../../../temp_{hf_s}.gif")   
+        pl.add_volume(data, cmap="jet", opacity=0.5)
+        pl.write_frame()
+        pl.close()
+    except:
+        pass
+
+    try:
+        pl = pv.Plotter()
+        pl.open_gif(f"../../../heat_flux_{hf_s}.gif")   
+        pl.add_volume(g.net_flux.to_numpy()[:,:,:].reshape(g.nx,g.ny,g.nz), cmap="jet", opacity=0.5)
+        pl.write_frame()
+        pl.close()
+    except:
+        pass
     
+    import jpcm
+    import matplotlib.pyplot as plt
+    plt.rcParams.update({"text.usetex": True,})
+    n = 9
+
+    cl = jpcm.get('fuyu').resampled(n+2).colors[2:]
+    
+    xl = (np.arange(0,g.nx) / g.nx) * g.L_chip
+    
+    names = ['die thickness','die width','die width']
+    names2 = ['z','y','y']
+    types = ['Axial Temperature Distribution',]*2 + ['Velocity Distribution',]
+    types2 = ['temp_axial','temp_axial','v_axial']
+    for j in range(3):
+        for i in range(n):
+            
+            if j == 0:
+                i0 = int(i * g.nz / n)
+                data = g.temp.to_numpy()[:,g.ny//2,i0]-273.15
+                plt.ylabel('Temperature (C)')
+            elif j == 1:
+                i0 = int(i * g.ny / n)
+                data = g.temp.to_numpy()[:,i0,g.nz//2]-273.15
+                plt.ylabel('Temperature (C)')
+            else:
+                i0 = int(i * g.ny / n)
+                data = g.velocity.to_numpy()[:,i0,g.nz//2]
+                plt.ylabel('Velocity (m/s)')
+            plt.plot(xl,data, label = f'{round(100*i/n)}'+r' \% ' +f'{names[j]}', color = cl[i])
+        plt.legend()
+        plt.xlabel('x (m)')
+        plt.title(f'{types[j]}, {names[j]} variation\n{hf}')
+        plt.savefig(f'../../../{types2[j]}_{hf_s}_{names2[j]}.png')
+        plt.close()
+        
+    with open(f'../../../{hf_s}_params.txt', 'w') as f:
+        for k,v in g.param.items():
+            f.write(f'{k} = {v}\n')
+        for k,v in m.param.items():
+            f.write(f'{k} = {v}\n')
+        
     # @ti.kernel
     # def shift(geo:ti.template()):
     #     for z in range(-1,geo.nz+1):
@@ -226,12 +314,3 @@ if __name__ == '__main__':
     # data = g.temp_next.to_numpy()[:,:,:].reshape(g.nx,g.ny,g.nz) - g.temp.to_numpy()[:,:,:].reshape(g.nx,g.ny,g.nz)
     # print(data[:,:,:])
     # print(np.min(data), np.mean(data), np.std(data), np.max(data))
-    import pyvista as pv
-    pl = pv.Plotter()
-    pl.open_gif(f"../../../output_3d.gif")   
-    # pl.camera.position = (-1.1, -1.5, 0.0)
-    # pl.camera.focal_point = (50.0, 50.0, 0.0)
-    # pl.camera.up = (1.0, 0.0, 1.0)
-    pl.add_volume(data, cmap="jet", opacity=0.5)
-    pl.write_frame()
-    pl.close()

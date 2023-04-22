@@ -7,8 +7,8 @@ class Geometry:
             'L_chip': 0.01464, 'W_chip': 0.0168, 'H_chip': 0.0001,
             'L_channel': 0.01464, 'W_channel': 500e-6, 'H_channel': 50e-6,
             'n_channel': 30,
-            'nx': 50, 'ny_channel': 9, 'ny_wall': 2, 'nz_channel': 9, 'nz_wall': 2,
-            'h': 1e-8, 'substep': 1,
+            'nx': 50, 'ny_channel': 6, 'ny_wall': 2, 'nz_channel': 6, 'nz_wall': 2,
+            'h': 1e-7, 'substep': 1,
         } 
         # param = {
         #     'L_chip': 0.02, 'W_chip': 0.00012, 'H_chip': 0.0001,
@@ -22,7 +22,8 @@ class Geometry:
         # for key, val in param.items():
         #     setattr(self, key, val)
 
-        # real world measurements
+        # real word measurements
+        self.param = param
         self.L_chip = param['L_chip']
         self.W_chip = param['W_chip']
         self.H_chip = param['H_chip']
@@ -79,6 +80,7 @@ class Geometry:
         self.temp = ti.field(ti.f32, shape = nodes,) 
         self.temp_next = ti.field(ti.f32, shape = nodes,)
         self.heat_flux = ti.field(ti.f32, shape = nodes,)
+        self.net_flux = ti.field(ti.f32, shape = nodes,)
         self.isfluid = ti.field(ti.i32, shape = nodes,)
 
         self.volume = ti.field(ti.f32, shape = nodes,) # TODO @colenockolds

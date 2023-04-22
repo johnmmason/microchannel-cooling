@@ -6,8 +6,9 @@ from model.lmd_resistance_functions import solid_to_solid, solid_to_liquid, liqu
 
 @ti.kernel
 def setup_heat_resistance(solid: ti.template(), fluid: ti.template(), geometry: ti.template()): 
+    ti.loop_config(parallelize=8, block_dim=16)
     # fill in the heat_resist array from lmd_geometry as in lmd_fluid.py
-    # TODO @longvu
+    # @longvu
     for i, j, k, w in ti.ndrange(geometry.nx, geometry.ny, geometry.nz, geometry.nd):
         i2, j2, k2 = i + (w == 0), j + (w == 1), k + (w == 2)
         ie, je, ke = i, j, k

@@ -10,6 +10,7 @@ def calculate_Re(fluid: ti.template(), geometry: ti.template()):
  
 @ti.kernel # TODO (@akhilsadam) improve to only calculate on edges!
 def calculate_Nu(fluid: ti.template(), geometry: ti.template()):
+    ti.loop_config(parallelize=8, block_dim=16)
     for i in range(geometry.nx):
         for j in range(geometry.ny):
             for k in range(geometry.nz):
