@@ -2,14 +2,15 @@ import taichi as ti
 
 
 @ti.kernel
-def calculate_Re(fluid, geometry):
+def calculate_Re(fluid: ti.template(), geometry: ti.template()):
     for i in range(geometry.nx):
         for j in range(geometry.ny):
             for k in range(geometry.nz):
-                geometry.Re[i,j,k] = fluid.rho * geometry.velocity[i,j,k] * geometry.D_channel / fluid.mu
+                geometry.Re[i,j,k] = fluid.rho * ti.abs(geometry.velocity[i,j,k,0]) * geometry.D_channel / fluid.mu
  
 @ti.kernel # TODO (@akhilsadam) improve to only calculate on edges!
-def calculate_Nu(fluid, geometry):
+def calculate_Nu(fluid: ti.template(), geometry: ti.template()):
+    ti.loop_config(parallelize=8, block_dim=16)
     for i in range(geometry.nx):
         for j in range(geometry.ny):
             for k in range(geometry.nz):
@@ -19,18 +20,22 @@ def calculate_Nu(fluid, geometry):
                 geometry.Nu[i,j,k] = Nu_uncor*fT # Nusselt number, correction for Zhuifu model (2013
 
 @ti.kernel
-def setup_fluid_velocity(geometry):
-    ql = geometry.Q / geometry.n_channel * 1e-6 / 60 # [m^3/s]
+def setup_fluid_velocity(Q: ti.f32, geometry: ti.template()):
+    ql = Q / geometry.n_channel
     v = ql / (geometry.W_channel * geometry.H_channel) 
     for i in range(geometry.nx):
         for j in range(geometry.ny):
             for k in range(geometry.nz):
                 # need a better reference:
                 # https://www.researchgate.net/post/What-is-the-velocity-profile-of-laminar-flow-in-a-square-pipe
-                y = geometry.channel_y(i,j,k)
-                z = geometry.channel_z(i,j,k)
-                vc = 32*v*y*(1-y)*z*(1-z) # TODO check this (@akhilsadam)
-                geometry.velocity[i,j,k,0] = vc
+                if geometry.isfluid[i,j,k] == 0:
+                    _,y,z = geometry.channel_x_y_z(i,j,k)
+                    y = y + 0.5
+                    z = z + 0.5
+                    vc = 32*v*y*(1-y)*z*(1-z) # TODO check this (@akhilsadam)
+                    geometry.velocity[i,j,k,0] = vc
+                else:
+                    geometry.velocity[i,j,k,0] = 0.0
                 geometry.velocity[i,j,k,1] = 0.0
                 geometry.velocity[i,j,k,2] = 0.0
                 geometry.pressure[i,j,k] = 0.0 # TODO (@akhilsadam)

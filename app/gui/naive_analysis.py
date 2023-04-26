@@ -22,11 +22,11 @@ def make_naive_anly(server, prefix):
     long_manager = DiskcacheLongCallbackManager(cache)
 
     app = new_app(server, prefix, long_manager, centered='center')
-    app.title = "Naive Model"
+    app.title = "Single Channel Enthalpy Transfer"
     app.version = 0.1
     # don't use H2 - that is reserved for dropdowns in Flask right now
     app.layout = html.Div([
-        html.H1("Microchannel Cooling, Naive Analysis", className='rh-align'),
+        html.H1(f"{app.title} Analysis", className='rh-align'),
         html.Div([
             html.Div([
                 html.Div(id='err'),

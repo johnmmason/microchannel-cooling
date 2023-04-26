@@ -13,21 +13,13 @@ from config import update_style
 def make_naive_app(server, prefix):
 
     app = new_app(server, prefix, centered='center')
-    app.title = "Naive Model"
+    app.title = "Single Channel Enthalpy Transfer"
     app.version = 0.1
     # don't use H2 - that is reserved for dropdowns in Flask right now
     app.layout = html.Div([
-        html.H1("Microchannel Cooling, Naive Method", className='rh-align'),
+        html.H1(app.title, className='rh-align'),
         html.Div([
             html.Div([
-                #html.Div(["Choose a parameter to optimize:",
-                #    dcc.RadioItems([
-                #                 {'label': 'Length', 'value': 'L'},
-                #                 {'label': 'Width', 'value': 'W'},
-                #                 {'label': 'Depth', 'value': 'depth'},
-                #                 {'label': 'No Optimization', 'value': 'no'},
-                #                 ], value = 'no', id = 'opt')],
-                #   ),
                 html.Div(id='err'),
                 html.Br(),
 		        html.Div(["Fluid:",
