@@ -207,5 +207,5 @@ def make_lmd_app(server, prefix):
     return app.server
 
     def gaussian(height, center_x, center_y, width_x, width_y):
-    return lambda x,y: height*np.exp(
+        return lambda x,y: height*np.exp(
                 -(((center_x-x)/width_x)**2+((center_y-y)/width_y)**2)/2)

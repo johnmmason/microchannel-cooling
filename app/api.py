@@ -46,7 +46,7 @@ with app.app_context():
     app = make_naive_app(app, '/single_channel/')
     app = make_naive_app_opt(app, '/single_channel/opt/')
     app = make_naive_anly(app, '/single_channel/anly/')
-    app = make_lmd_app(app, '/lmd/')
+    # app = make_lmd_app(app, '/lmd/')
 
 
 if __name__ == '__main__':
