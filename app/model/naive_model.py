@@ -70,7 +70,7 @@ def naive_model(T_in, T_w, Q,
         T_in_ = T[i-1] # element inlet temperature [K]
                 
         h = Nu * k / D # heat transfer coefficient
-        dE = 4 * h * W * dL * (T_w - T_in_) # heat transfer [W]
+        dE = 2 * h * (W+H)* dL * (T_w - T_in_) # heat transfer [W]
         T_out = (dE / (rho * Q_SI * cp)) + T_in_ # element outlet temperature [K]
 
         T[i] = T_out
